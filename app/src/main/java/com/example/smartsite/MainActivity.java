@@ -14,8 +14,6 @@ import androidx.fragment.app.Fragment;
 import com.example.smartsite.databinding.ActivityMainBinding;
 import com.google.android.material.navigation.NavigationBarView;
 
-import java.util.Set;
-
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding; // ✅ 在類別內宣告 binding
 
