@@ -43,6 +43,7 @@ dependencies {
     implementation(libs.constraintlayout)
 //    implementation ("com.google.android.material:material:1.1.0-alpha10")//底部導覽模組
     implementation("com.google.android.material:material:1.10.0") // ✅ 更新 Material 庫
+    implementation ("com.github.anastr:speedviewlib:1.6.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
