@@ -56,7 +56,7 @@ public class HomeFragment extends Fragment {
 
         // 設定 O3 儀表範圍與顏色
         setupGauge(gaugeO3, "O₃ 濃度 (ppb)", 0f, 160f, new int[]{Color.GREEN, Color.rgb(255, 165, 0), Color.RED}, new float[]{.33f, .66f, 1f});
-        gaugeO3.speedTo(256f);
+        gaugeO3.speedTo(256);
 
         // 設定 PM2.5 儀表範圍與顏色
         setupGauge(gaugePM25, "PM2.5 (µg/m³)", 0f, 200f, new int[]{Color.GREEN, Color.rgb(255, 165, 0), Color.RED}, new float[]{.33f, .66f, 1f});
@@ -76,7 +76,7 @@ public class HomeFragment extends Fragment {
             if (speed < 8) {
                 gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
             } else if (speed < 18) {
-                gauge.setSpeedTextColor(Color.rgb(255, 165, 0)); // 8 到 18 橙色
+                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
             } else {
                 gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
             }
@@ -91,7 +91,7 @@ public class HomeFragment extends Fragment {
             if (speed < 53) {
                 gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
             } else if (speed < 107) {
-                gauge.setSpeedTextColor(Color.rgb(255, 165, 0)); // 8 到 18 橙色
+                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
             } else {
                 gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
             }
@@ -106,7 +106,7 @@ public class HomeFragment extends Fragment {
             if (speed < 67) {
                 gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
             } else if (speed < 133) {
-                gauge.setSpeedTextColor(Color.rgb(255, 165, 0)); // 8 到 18 橙色
+                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
             } else {
                 gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
             }
@@ -121,7 +121,7 @@ public class HomeFragment extends Fragment {
             if (speed < 167) {
                 gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
             } else if (speed < 333) {
-                gauge.setSpeedTextColor(Color.rgb(255, 165, 0)); // 8 到 18 橙色
+                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
             } else {
                 gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
             }
