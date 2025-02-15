@@ -44,6 +44,7 @@ dependencies {
     implementation("com.google.android.material:material:1.10.0") // ✅ 更新 Material 庫
     implementation ("com.github.anastr:speedviewlib:1.6.1")
     implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation ("com.google.android.material:material:1.9.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
