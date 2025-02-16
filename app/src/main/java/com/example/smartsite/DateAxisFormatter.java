@@ -12,8 +12,10 @@ public class DateAxisFormatter extends ValueFormatter {
 
     @Override
     public String getAxisLabel(float value, AxisBase axis) {
-        Date date = new Date((long) value);
-        return dateFormat.format(date);
+//        Date date = new Date((long) value);
+//        return dateFormat.format(date);
+        long timestamp = (long) value;  // ✅ 確保精度
+        return dateFormat.format(new Date(timestamp));
     }
 
 }
