@@ -1,6 +1,5 @@
 package com.example.smartsite;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -37,7 +36,7 @@ public class HistoryFragment extends Fragment {
     private LineChart lineChart;
     private EditText etDateRange;
     private SimpleDateFormat sdf;
-    private ArrayList<Entry> allData;  // 存儲所有數據
+    private ArrayList<ArrayList<Entry>> allData;  // 多條折線數據 // 存儲所有數據
     private long startDateMillis, endDateMillis;  // 用戶選擇的時間範圍
     private TextView tvSelectedDate;
     private ImageView ivPrevDay, ivNextDay;
@@ -89,24 +88,6 @@ public class HistoryFragment extends Fragment {
         return view;
     }
 
-    // 🔹 初始化數據
-    private void initData() {
-        allData = new ArrayList<>();
-        allData.add(new Entry(1738387200000f, 1f));  // 2025-02-01
-        allData.add(new Entry(1738473600000f, 2f));  // 2025-02-02
-        allData.add(new Entry(1738560000000f, 3f));  // 2025-02-03
-        allData.add(new Entry(1738646400000f, 4f));  // 2025-02-04
-        allData.add(new Entry(1738732800000f, 5f));  // 2025-02-05
-        allData.add(new Entry(1738819200000f, 6f));  // 2025-02-06
-        allData.add(new Entry(1738905600000f, 7f));  // 2025-02-07
-        allData.add(new Entry(1738992000000f, 8f));  // 2025-02-08
-
-        // 默認顯示全部數據
-        startDateMillis = (long) allData.get(0).getX();
-        endDateMillis = (long) allData.get(allData.size() - 1).getX();
-//        updateChart();
-    }
-
     // 🔹 顯示日期範圍選擇器
     private void showDateRangePicker() {
         MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
@@ -129,55 +110,66 @@ public class HistoryFragment extends Fragment {
             etDateRange.setText(sdf.format(new Date(startDateMillis)) + " - " + sdf.format(new Date(endDateMillis - 86400000L)));
 
             // 更新圖表
-//            updateChart();
+            updateChart();
         });
     }
 
     // 🔹 根據選擇的日期範圍更新折線圖
-    private void updateChart(ArrayList<Entry> data1, ArrayList<Entry> data2, ArrayList<Entry> data3, ArrayList<Entry> data4) {
-        if (data1.isEmpty() || data2.isEmpty() || data3.isEmpty() || data4.isEmpty()) {
-            lineChart.setNoDataText("沒有數據可顯示");
-            lineChart.invalidate();
+    private void updateChart() {
+        if (allData == null || allData.isEmpty()) {
+            Log.e("Chart", "數據為空，無法更新圖表");
             return;
         }
 
-        LineDataSet dataSet1 = new LineDataSet(data1, "數據1");
-        dataSet1.setColor(Color.BLUE);
-        dataSet1.setLineWidth(2f);
-        dataSet1.setCircleRadius(4f);
+        ArrayList<LineDataSet> dataSets = new ArrayList<>();
+        int[] colors = {
+                android.R.color.holo_blue_light,
+                android.R.color.holo_red_light,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light
+        };
 
-//        LineDataSet dataSet2 = new LineDataSet(data2, "數據2");
-//        dataSet2.setColor(Color.GREEN);
-//        dataSet2.setLineWidth(2f);
-//        dataSet2.setCircleRadius(4f);
-//
-//        LineDataSet dataSet3 = new LineDataSet(data3, "數據3");
-//        dataSet3.setColor(Color.YELLOW);
-//        dataSet3.setLineWidth(2f);
-//        dataSet3.setCircleRadius(4f);
-//
-//        LineDataSet dataSet4 = new LineDataSet(data4, "數據4");
-//        dataSet4.setColor(Color.MAGENTA);
-//        dataSet4.setLineWidth(2f);
-//        dataSet4.setCircleRadius(4f);
+        for (int i = 0; i < allData.size(); i++) {
+            ArrayList<Entry> filteredData = new ArrayList<>();
+            for (Entry entry : allData.get(i)) {
+                if (entry.getX() >= startDateMillis && entry.getX() <= endDateMillis) {
+                    filteredData.add(entry);
+                }
+            }
 
-//        LineData lineData = new LineData(dataSet1, dataSet2, dataSet3, dataSet4);
-        LineData lineData = new LineData(dataSet1);
-        lineChart.setData(lineData);
+            if (!filteredData.isEmpty()) {
+                LineDataSet dataSet = new LineDataSet(filteredData, "數據 " + (i + 1));
+                dataSet.setColor(getResources().getColor(colors[i % colors.length]));
+                dataSet.setValueTextColor(getResources().getColor(android.R.color.black));
+                dataSet.setLineWidth(2f);
+                dataSet.setValueTextSize(10f);
+                dataSet.setCircleRadius(4f);
+                dataSets.add(dataSet);
+            }
+        }
 
-        // 🔹 修正 X 軸為日期格式
+        if (dataSets.isEmpty()) {
+            Log.e("Chart", "沒有符合篩選條件的數據");
+            return;
+        }
+
+        // 設定 X 軸格式
         XAxis xAxis = lineChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setValueFormatter(new DateAxisFormatter());
-        xAxis.setGranularity(1f); // 避免標籤太擁擠
         xAxis.setLabelRotationAngle(45);
+        xAxis.setGranularityEnabled(true);
+        xAxis.setGranularity(1f);
+        xAxis.setValueFormatter(new DateAxisFormatter());
 
-        lineChart.setVisibleXRangeMaximum(10);
-        lineChart.moveViewToX(startDateMillis);
-        lineChart.invalidate();
+        // 設定多條數據
+        LineData lineData = new LineData();
+        for (LineDataSet dataSet : dataSets) {
+            lineData.addDataSet(dataSet);
+        }
+
+        lineChart.setData(lineData);
         lineChart.notifyDataSetChanged();
         lineChart.invalidate();
-
     }
 
     // 更新日期顯示
@@ -208,11 +200,6 @@ public class HistoryFragment extends Fragment {
 
     private void loadCSVData() {
         allData = new ArrayList<>();
-        ArrayList<Entry> data1 = new ArrayList<>();
-        ArrayList<Entry> data2 = new ArrayList<>();
-        ArrayList<Entry> data3 = new ArrayList<>();
-        ArrayList<Entry> data4 = new ArrayList<>();
-
         try {
             InputStream inputStream = getActivity().getAssets().open("test_data.csv");
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -220,20 +207,37 @@ public class HistoryFragment extends Fragment {
             boolean firstLine = true;
 
             while ((line = reader.readLine()) != null) {
-                if (firstLine) {  // 跳過標題行
+                String[] parts = line.split(",");
+
+                // 忽略 CSV 第一行標題
+                if (firstLine) {
                     firstLine = false;
+
+                    // 初始化 allData（跳過 Timestamp 和 Date 欄位）
+                    for (int i = 1; i < parts.length - 1; i++) {
+                        allData.add(new ArrayList<>());
+                    }
                     continue;
                 }
 
-                String[] parts = line.split(",");
-                if (parts.length >= 5) {  // 確保有足夠的數據列
-                    long timestamp = (long) Double.parseDouble(parts[0]);
-                    data1.add(new Entry(timestamp, Float.parseFloat(parts[1])));
-//                    data2.add(new Entry(timestamp, Float.parseFloat(parts[2])));
-//                    data3.add(new Entry(timestamp, Float.parseFloat(parts[3])));
-//                    data4.add(new Entry(timestamp, Float.parseFloat(parts[4])));
-                    Log.d("CSV", "timestamp: " + timestamp + ", value1: " + parts[1] + ", value2: " + parts[2]);
+                // 確保數據欄位足夠
+                if (parts.length >= 6) {  // 5 個數據欄位 + 1 個日期欄
+                    try {
+                        long timestamp = Long.parseLong(parts[0]);
 
+                        // 轉換時間戳為毫秒級
+                        if (timestamp < 10000000000L) {
+                            timestamp *= 1000;
+                        }
+
+                        // 解析數據（跳過 Date 欄）
+                        for (int i = 1; i < parts.length - 1; i++) {
+                            float value = Float.parseFloat(parts[i]);  // 解析數字
+                            allData.get(i - 1).add(new Entry(timestamp, value));
+                        }
+                    } catch (NumberFormatException e) {
+                        Log.e("CSV", "數據格式錯誤: " + e.getMessage() + " -> " + line);
+                    }
                 }
             }
             reader.close();
@@ -242,13 +246,12 @@ public class HistoryFragment extends Fragment {
             Log.e("CSV", "讀取 CSV 失敗: " + e.getMessage());
         }
 
-        if (!data1.isEmpty()) {
-            startDateMillis = (long) data1.get(0).getX();
-            endDateMillis = (long) data1.get(data1.size() - 1).getX();
-            updateChart(data1, data2, data3, data4);
+        // 確保數據不為空，然後更新圖表
+        if (!allData.isEmpty() && !allData.get(0).isEmpty()) {
+            startDateMillis = (long) allData.get(0).get(0).getX();
+            endDateMillis = (long) allData.get(0).get(allData.get(0).size() - 1).getX();
+            updateChart();
         }
-
-        Log.d("CSV", "讀取到的數據行數：" + data1.size());
-        Log.d("Chart", "data1 size: " + data1.size() + ", data2 size: " + data2.size());
     }
+
 }
