@@ -65,7 +65,7 @@ public class SetupFragment extends Fragment {
         recyclerWifi = view.findViewById(R.id.recycler_wifi);
         recyclerBluetooth = view.findViewById(R.id.recycler_bluetooth);
 
-        // 取得 TextView
+        // Wi-Fi 和藍牙狀態顯示
         TextView tvWifiStatus = view.findViewById(R.id.tv_wifi_status);
         TextView tvBluetoothStatus = view.findViewById(R.id.tv_bluetooth_status);
 
@@ -84,13 +84,13 @@ public class SetupFragment extends Fragment {
         switchWifi.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 recyclerWifi.setVisibility(View.VISIBLE);
-                tvWifiStatus.setText("已開啟"); // 更新 Wi-Fi 狀態
+                tvWifiStatus.setText("已開啟");
                 tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
                 checkAndRequestPermissions();
                 scanWifi();
             } else {
                 recyclerWifi.setVisibility(View.GONE);
-                tvWifiStatus.setText("已關閉"); // 更新 Wi-Fi 狀態
+                tvWifiStatus.setText("已關閉");
                 tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
             }
         });
@@ -98,22 +98,26 @@ public class SetupFragment extends Fragment {
         switchBluetooth.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 recyclerBluetooth.setVisibility(View.VISIBLE);
-                tvBluetoothStatus.setText("已開啟"); // 更新藍牙狀態
+                tvBluetoothStatus.setText("已開啟");
                 tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
                 checkAndRequestPermissions();
                 scanBluetooth();
             } else {
                 recyclerBluetooth.setVisibility(View.GONE);
-                tvBluetoothStatus.setText("已關閉"); // 更新藍牙狀態
+                tvBluetoothStatus.setText("已關閉");
                 tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
             }
         });
     }
 
-
     private final BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+
             List<ScanResult> results = wifiManager.getScanResults();
             wifiList.clear();
             for (ScanResult result : results) {
@@ -128,6 +132,13 @@ public class SetupFragment extends Fragment {
     private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            // **先檢查權限**
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(context, "缺少藍牙連接權限", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             if (device != null && device.getName() != null) {
                 bluetoothList.add(device.getName());
@@ -136,9 +147,14 @@ public class SetupFragment extends Fragment {
         }
     };
 
+
     private void scanWifi() {
         if (wifiManager == null || !wifiManager.isWifiEnabled()) {
             Toast.makeText(requireContext(), "請開啟 Wi-Fi", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!hasWifiPermissions()) {
+            checkAndRequestPermissions();
             return;
         }
         if (!isWifiReceiverRegistered) {
@@ -153,17 +169,36 @@ public class SetupFragment extends Fragment {
             Toast.makeText(requireContext(), "請開啟藍牙", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // 先檢查權限
         if (!hasBluetoothPermissions()) {
             requestBluetoothPermissions();
             return;
         }
+
         bluetoothList.clear();
+
+        // **檢查權限後註冊 Receiver**
         if (!isBluetoothReceiverRegistered) {
-            requireContext().registerReceiver(bluetoothReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-            isBluetoothReceiverRegistered = true;
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN)
+                    == PackageManager.PERMISSION_GRANTED) {
+                requireContext().registerReceiver(bluetoothReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+                isBluetoothReceiverRegistered = true;
+            } else {
+                Toast.makeText(requireContext(), "缺少藍牙掃描權限", Toast.LENGTH_SHORT).show();
+                return;
+            }
         }
-        bluetoothAdapterObj.startDiscovery();
+
+        // **檢查權限後開始掃描**
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN)
+                == PackageManager.PERMISSION_GRANTED) {
+            bluetoothAdapterObj.startDiscovery();
+        } else {
+            Toast.makeText(requireContext(), "缺少藍牙掃描權限", Toast.LENGTH_SHORT).show();
+        }
     }
+
 
     private boolean hasWifiPermissions() {
         return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -196,33 +231,6 @@ public class SetupFragment extends Fragment {
         }
     }
 
-    private void requestBluetoothPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ActivityCompat.requestPermissions(requireActivity(),
-                    new String[]{Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT},
-                    REQUEST_CODE_PERMISSIONS);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            boolean allGranted = true;
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allGranted = false;
-                    break;
-                }
-            }
-            if (allGranted) {
-                Toast.makeText(requireContext(), "權限已授予", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(), "權限被拒絕，無法掃描 Wi-Fi 和藍牙", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -235,4 +243,13 @@ public class SetupFragment extends Fragment {
             isBluetoothReceiverRegistered = false;
         }
     }
+
+    private void requestBluetoothPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ActivityCompat.requestPermissions(requireActivity(),
+                    new String[]{Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT},
+                    REQUEST_CODE_PERMISSIONS);
+        }
+    }
+
 }
