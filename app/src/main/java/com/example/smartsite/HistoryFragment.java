@@ -1,28 +1,22 @@
 package com.example.smartsite;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
-import androidx.core.util.Pair;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.google.android.material.datepicker.MaterialDatePicker;
-import com.google.android.material.datepicker.CalendarConstraints;
-import com.google.android.material.datepicker.DateValidatorPointBackward;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,15 +30,14 @@ import java.util.Locale;
 
 public class HistoryFragment extends Fragment {
 
-    private LineChart lineChart;
-    private EditText etDateRange;
+    private LineChart lineChartCO, lineChartO3, lineChartPM25, lineChartPM10;
     private SimpleDateFormat sdf;
     private ArrayList<ArrayList<Entry>> allData;  // 多條折線數據 // 存儲所有數據
     private long startDateMillis, endDateMillis;  // 用戶選擇的時間範圍
     private TextView tvSelectedDate;
     private ImageView ivPrevDay, ivNextDay;
     private Calendar calendar;
-
+    String[] label = {"CO", "O3", "PM2.5", "PM10"};
 
     public HistoryFragment() {
         // Required empty public constructor
@@ -62,15 +55,14 @@ public class HistoryFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_history, container, false);
 
         // 綁定 UI 元件
-        lineChart = view.findViewById(R.id.lineChart);
-//        etDateRange = view.findViewById(R.id.etDateRange);
+        lineChartCO = view.findViewById(R.id.lineChartCO);
+        lineChartO3 = view.findViewById(R.id.lineChartO3);
+        lineChartPM25 = view.findViewById(R.id.lineChartPM2_5);
+        lineChartPM10 = view.findViewById(R.id.lineChartPM10);
+
 
         // 初始化數據
-//        initData();
         loadCSVData();  // 讀取 CSV 數據
-
-        // 點擊日期選擇框，顯示日期範圍選擇器
-//        etDateRange.setOnClickListener(v -> showDateRangePicker());
 
         tvSelectedDate = view.findViewById(R.id.tvSelectedDate);
         ivPrevDay = view.findViewById(R.id.ivPrevDay);
@@ -91,32 +83,6 @@ public class HistoryFragment extends Fragment {
         return view;
     }
 
-    // 🔹 顯示日期範圍選擇器
-//    private void showDateRangePicker() {
-//        MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
-//        builder.setTitleText("選擇日期範圍");
-//
-//        // 限制選擇的日期不能超過今天
-//        CalendarConstraints.Builder constraintsBuilder = new CalendarConstraints.Builder();
-//        constraintsBuilder.setValidator(DateValidatorPointBackward.now());
-//        builder.setCalendarConstraints(constraintsBuilder.build());
-//
-//        MaterialDatePicker<Pair<Long, Long>> dateRangePicker = builder.build();
-//        dateRangePicker.show(getParentFragmentManager(), "DATE_RANGE_PICKER");
-//
-//        // 處理選擇結果
-//        dateRangePicker.addOnPositiveButtonClickListener(selection -> {
-//            startDateMillis = selection.first;
-//            endDateMillis = selection.second + 86400000L;  // ✅ 修正：補足一天的時間
-//
-//            // 顯示選擇的日期範圍
-//            etDateRange.setText(sdf.format(new Date(startDateMillis)) + " - " + sdf.format(new Date(endDateMillis - 86400000L)));
-//
-//            // 更新圖表
-//            updateChart();
-//        });
-//    }
-
     // 🔹 根據選擇的日期範圍更新折線圖
     private void updateChart() {
         if (allData == null || allData.isEmpty()) {
@@ -124,25 +90,24 @@ public class HistoryFragment extends Fragment {
             return;
         }
 
-        ArrayList<LineDataSet> dataSets = new ArrayList<>();
+        LineChart[] charts = {lineChartCO, lineChartO3, lineChartPM25, lineChartPM10};
         int[] colors = {
                 android.R.color.holo_blue_light,
-                android.R.color.holo_red_light,
+                android.R.color.holo_purple,
                 android.R.color.holo_green_light,
-                android.R.color.holo_green_light
-//                android.R.color.holo_orange_light
+                android.R.color.black
         };
 
-        for (int i = 0; i < allData.size(); i++) {
+        for (int i = 0; i < allData.size() && i < charts.length; i++) {
             ArrayList<Entry> filteredData = new ArrayList<>();
-            for (Entry entry : allData.get(0)) {
+            for (Entry entry : allData.get(i)) {
                 if (entry.getX() >= startDateMillis && entry.getX() <= endDateMillis) {
                     filteredData.add(entry);
                 }
             }
 
             if (!filteredData.isEmpty()) {
-                LineDataSet dataSet = new LineDataSet(filteredData, "數據 " + (i + 1));
+                LineDataSet dataSet = new LineDataSet(filteredData, label[i]);
                 dataSet.setColor(getResources().getColor(colors[i % colors.length]));
                 dataSet.setValueTextColor(getResources().getColor(android.R.color.black));
                 dataSet.setLineWidth(2f);
@@ -151,44 +116,24 @@ public class HistoryFragment extends Fragment {
                 dataSet.setCircleColors(getResources().getColor(colors[i % colors.length]));
                 dataSet.setCircleHoleColor(getResources().getColor(colors[i % colors.length]));
                 dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-                dataSets.add(dataSet);
+
+                LineData lineData = new LineData(dataSet);
+                charts[i].setData(lineData);
+
+                // 設定 X 軸格式
+                XAxis xAxis = charts[i].getXAxis();
+                xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+                xAxis.setLabelRotationAngle(45);
+                xAxis.setGranularityEnabled(true);
+                xAxis.setGranularity(1f);
+                xAxis.setValueFormatter(new DateAxisFormatter());
+
+                charts[i].notifyDataSetChanged();
+                charts[i].invalidate();
+            } else {
+                charts[i].clear();
             }
         }
-
-        if (dataSets.isEmpty()) {
-            Log.e("Chart", "沒有符合篩選條件的數據");
-            return;
-        }
-
-        // 設定 X 軸格式
-        XAxis xAxis = lineChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setLabelRotationAngle(45);
-        xAxis.setGranularityEnabled(true);
-        xAxis.setGranularity(1f);
-        xAxis.setValueFormatter(new DateAxisFormatter());
-
-        // 設定 Y 軸限制線 (黃線在 Y=95)
-        YAxis yAxis = lineChart.getAxisLeft();
-        yAxis.removeAllLimitLines(); // 移除舊的標記線
-        yAxis.setAxisMinimum(85f);
-        yAxis.setAxisMaximum(105f);
-        LimitLine limitLine = new LimitLine(95f);
-        limitLine.setLineColor(Color.YELLOW);
-        limitLine.setLineWidth(2f);
-        limitLine.setTextColor(Color.BLACK);
-        limitLine.setTextSize(12f);
-        yAxis.addLimitLine(limitLine);
-
-        // 設定多條數據
-        LineData lineData = new LineData();
-        for (LineDataSet dataSet : dataSets) {
-            lineData.addDataSet(dataSet);
-        }
-
-        lineChart.setData(lineData);
-        lineChart.notifyDataSetChanged();
-        lineChart.invalidate();
     }
 
     // 更新日期顯示
