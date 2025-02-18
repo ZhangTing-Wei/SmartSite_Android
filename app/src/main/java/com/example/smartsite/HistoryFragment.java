@@ -1,5 +1,6 @@
 package com.example.smartsite;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -13,7 +14,9 @@ import androidx.fragment.app.Fragment;
 import androidx.core.util.Pair;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -126,12 +129,13 @@ public class HistoryFragment extends Fragment {
                 android.R.color.holo_blue_light,
                 android.R.color.holo_red_light,
                 android.R.color.holo_green_light,
-                android.R.color.holo_orange_light
+                android.R.color.holo_green_light
+//                android.R.color.holo_orange_light
         };
 
         for (int i = 0; i < allData.size(); i++) {
             ArrayList<Entry> filteredData = new ArrayList<>();
-            for (Entry entry : allData.get(i)) {
+            for (Entry entry : allData.get(0)) {
                 if (entry.getX() >= startDateMillis && entry.getX() <= endDateMillis) {
                     filteredData.add(entry);
                 }
@@ -143,7 +147,10 @@ public class HistoryFragment extends Fragment {
                 dataSet.setValueTextColor(getResources().getColor(android.R.color.black));
                 dataSet.setLineWidth(2f);
                 dataSet.setValueTextSize(10f);
-                dataSet.setCircleRadius(4f);
+                dataSet.setCircleRadius(2f);
+                dataSet.setCircleColors(getResources().getColor(colors[i % colors.length]));
+                dataSet.setCircleHoleColor(getResources().getColor(colors[i % colors.length]));
+                dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
                 dataSets.add(dataSet);
             }
         }
@@ -160,6 +167,18 @@ public class HistoryFragment extends Fragment {
         xAxis.setGranularityEnabled(true);
         xAxis.setGranularity(1f);
         xAxis.setValueFormatter(new DateAxisFormatter());
+
+        // 設定 Y 軸限制線 (黃線在 Y=95)
+        YAxis yAxis = lineChart.getAxisLeft();
+        yAxis.removeAllLimitLines(); // 移除舊的標記線
+        yAxis.setAxisMinimum(85f);
+        yAxis.setAxisMaximum(105f);
+        LimitLine limitLine = new LimitLine(95f);
+        limitLine.setLineColor(Color.YELLOW);
+        limitLine.setLineWidth(2f);
+        limitLine.setTextColor(Color.BLACK);
+        limitLine.setTextSize(12f);
+        yAxis.addLimitLine(limitLine);
 
         // 設定多條數據
         LineData lineData = new LineData();
