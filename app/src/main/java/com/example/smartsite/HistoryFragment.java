@@ -63,14 +63,14 @@ public class HistoryFragment extends Fragment {
 
         // 綁定 UI 元件
         lineChart = view.findViewById(R.id.lineChart);
-        etDateRange = view.findViewById(R.id.etDateRange);
+//        etDateRange = view.findViewById(R.id.etDateRange);
 
         // 初始化數據
 //        initData();
         loadCSVData();  // 讀取 CSV 數據
 
         // 點擊日期選擇框，顯示日期範圍選擇器
-        etDateRange.setOnClickListener(v -> showDateRangePicker());
+//        etDateRange.setOnClickListener(v -> showDateRangePicker());
 
         tvSelectedDate = view.findViewById(R.id.tvSelectedDate);
         ivPrevDay = view.findViewById(R.id.ivPrevDay);
@@ -92,30 +92,30 @@ public class HistoryFragment extends Fragment {
     }
 
     // 🔹 顯示日期範圍選擇器
-    private void showDateRangePicker() {
-        MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
-        builder.setTitleText("選擇日期範圍");
-
-        // 限制選擇的日期不能超過今天
-        CalendarConstraints.Builder constraintsBuilder = new CalendarConstraints.Builder();
-        constraintsBuilder.setValidator(DateValidatorPointBackward.now());
-        builder.setCalendarConstraints(constraintsBuilder.build());
-
-        MaterialDatePicker<Pair<Long, Long>> dateRangePicker = builder.build();
-        dateRangePicker.show(getParentFragmentManager(), "DATE_RANGE_PICKER");
-
-        // 處理選擇結果
-        dateRangePicker.addOnPositiveButtonClickListener(selection -> {
-            startDateMillis = selection.first;
-            endDateMillis = selection.second + 86400000L;  // ✅ 修正：補足一天的時間
-
-            // 顯示選擇的日期範圍
-            etDateRange.setText(sdf.format(new Date(startDateMillis)) + " - " + sdf.format(new Date(endDateMillis - 86400000L)));
-
-            // 更新圖表
-            updateChart();
-        });
-    }
+//    private void showDateRangePicker() {
+//        MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
+//        builder.setTitleText("選擇日期範圍");
+//
+//        // 限制選擇的日期不能超過今天
+//        CalendarConstraints.Builder constraintsBuilder = new CalendarConstraints.Builder();
+//        constraintsBuilder.setValidator(DateValidatorPointBackward.now());
+//        builder.setCalendarConstraints(constraintsBuilder.build());
+//
+//        MaterialDatePicker<Pair<Long, Long>> dateRangePicker = builder.build();
+//        dateRangePicker.show(getParentFragmentManager(), "DATE_RANGE_PICKER");
+//
+//        // 處理選擇結果
+//        dateRangePicker.addOnPositiveButtonClickListener(selection -> {
+//            startDateMillis = selection.first;
+//            endDateMillis = selection.second + 86400000L;  // ✅ 修正：補足一天的時間
+//
+//            // 顯示選擇的日期範圍
+//            etDateRange.setText(sdf.format(new Date(startDateMillis)) + " - " + sdf.format(new Date(endDateMillis - 86400000L)));
+//
+//            // 更新圖表
+//            updateChart();
+//        });
+//    }
 
     // 🔹 根據選擇的日期範圍更新折線圖
     private void updateChart() {
@@ -198,9 +198,32 @@ public class HistoryFragment extends Fragment {
 
     // 切換日期
     private void changeDate(int days) {
-        calendar.add(Calendar.DAY_OF_MONTH, days);
-        updateDateDisplay();
+        try {
+            // 1️⃣ 取得當前顯示的日期（yyyy-MM-dd）
+            String currentDateStr = tvSelectedDate.getText().toString();
+
+            // 2️⃣ 解析為 Date 物件
+            Date currentDate = sdf.parse(currentDateStr);
+            if (currentDate == null) return;
+
+            // 3️⃣ 轉換為毫秒級時間戳
+            long currentMillis = currentDate.getTime();
+
+            // 4️⃣ 加減天數
+            long newMillis = currentMillis + (days * 86400000L);
+
+            // 5️⃣ 更新日期範圍
+            startDateMillis = newMillis;
+            endDateMillis = newMillis + 86400000L;  // ✅ 修正：補足一天的時間
+
+            // 6️⃣ 更新 UI
+            tvSelectedDate.setText(sdf.format(new Date(startDateMillis)));
+            updateChart();
+        } catch (Exception e) {
+            Log.e("DateError", "日期解析錯誤: " + e.getMessage());
+        }
     }
+
 
     // 顯示日期選擇器
     private void showDatePicker() {
@@ -213,7 +236,11 @@ public class HistoryFragment extends Fragment {
 
         datePicker.addOnPositiveButtonClickListener(selection -> {
             calendar.setTimeInMillis(selection);
+            startDateMillis = selection;
+            endDateMillis = selection + 86400000L;  // ✅ 修正：補足一天的時間
             updateDateDisplay();
+            // 更新圖表
+            updateChart();
         });
     }
 
