@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -92,10 +93,10 @@ public class HistoryFragment extends Fragment {
 
         LineChart[] charts = {lineChartCO, lineChartO3, lineChartPM25, lineChartPM10};
         int[] colors = {
-                android.R.color.holo_blue_light,
-                android.R.color.holo_purple,
-                android.R.color.holo_green_light,
-                android.R.color.black
+                R.color.CO,
+                R.color.O3,
+                R.color.PM2_5,
+                R.color.PM10
         };
 
         for (int i = 0; i < allData.size() && i < charts.length; i++) {
@@ -107,14 +108,21 @@ public class HistoryFragment extends Fragment {
             }
 
             if (!filteredData.isEmpty()) {
+                // 為每個點設定顏色
+                ArrayList<Integer> pointColors = new ArrayList<>();
+                for (Entry entry : filteredData) {
+                    pointColors.add(getColorForValue(i, entry.getY()));  // 根據數據值選擇顏色
+                }
                 LineDataSet dataSet = new LineDataSet(filteredData, label[i]);
+                dataSet.setDrawCircles(true);
+                dataSet.setCircleColors(pointColors);
+                dataSet.setCircleRadius(2f);
+                dataSet.setDrawCircleHole(false);
                 dataSet.setColor(getResources().getColor(colors[i % colors.length]));
                 dataSet.setValueTextColor(getResources().getColor(android.R.color.black));
                 dataSet.setLineWidth(2f);
                 dataSet.setValueTextSize(10f);
-                dataSet.setCircleRadius(2f);
-                dataSet.setCircleColors(getResources().getColor(colors[i % colors.length]));
-                dataSet.setCircleHoleColor(getResources().getColor(colors[i % colors.length]));
+
                 dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
 
                 LineData lineData = new LineData(dataSet);
@@ -133,6 +141,30 @@ public class HistoryFragment extends Fragment {
             } else {
                 charts[i].clear();
             }
+        }
+    }
+
+    // 🔹 根據污染標準決定顏色
+    private int getColorForValue(int index, float value) {
+        switch (index) {
+            case 0: // CO (ppm)
+                if (value < 8) return getResources().getColor(R.color.green);
+                if (value < 18) return getResources().getColor(R.color.orange);
+                return getResources().getColor(R.color.red);
+            case 1: // O3 (ppb)
+                if (value < 53) return getResources().getColor(R.color.green);
+                if (value < 107) return getResources().getColor(R.color.orange);
+                return getResources().getColor(R.color.red);
+            case 2: // PM2.5 (µg/m³)
+                if (value < 67) return getResources().getColor(R.color.green);
+                if (value < 133) return getResources().getColor(R.color.orange);
+                return getResources().getColor(R.color.red);
+            case 3: // PM10 (µg/m³)
+                if (value < 167) return getResources().getColor(R.color.green);
+                if (value < 333) return getResources().getColor(R.color.orange);
+                return getResources().getColor(R.color.red);
+            default:
+                return getResources().getColor(R.color.black);
         }
     }
 
