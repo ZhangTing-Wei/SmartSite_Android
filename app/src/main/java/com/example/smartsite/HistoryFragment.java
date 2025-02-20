@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -39,6 +40,12 @@ public class HistoryFragment extends Fragment {
     private ImageView ivPrevDay, ivNextDay;
     private Calendar calendar;
     String[] label = {"CO", "O3", "PM2.5", "PM10"};
+    int[] colors = {
+            R.color.CO,
+            R.color.O3,
+            R.color.PM2_5,
+            R.color.PM10
+    };
 
     public HistoryFragment() {
         // Required empty public constructor
@@ -92,15 +99,11 @@ public class HistoryFragment extends Fragment {
         }
 
         LineChart[] charts = {lineChartCO, lineChartO3, lineChartPM25, lineChartPM10};
-        int[] colors = {
-                R.color.CO,
-                R.color.O3,
-                R.color.PM2_5,
-                R.color.PM10
-        };
 
         for (int i = 0; i < allData.size() && i < charts.length; i++) {
             ArrayList<Entry> filteredData = new ArrayList<>();
+
+            // **🔹 先過濾數據**
             for (Entry entry : allData.get(i)) {
                 if (entry.getX() >= startDateMillis && entry.getX() <= endDateMillis) {
                     filteredData.add(entry);
@@ -108,27 +111,55 @@ public class HistoryFragment extends Fragment {
             }
 
             if (!filteredData.isEmpty()) {
-                // 為每個點設定顏色
+                // **🔹 先重置 maxY 和 minY**
+                float maxY = Float.NEGATIVE_INFINITY;
+                float minY = Float.POSITIVE_INFINITY;
+
                 ArrayList<Integer> pointColors = new ArrayList<>();
                 for (Entry entry : filteredData) {
-                    pointColors.add(getColorForValue(i, entry.getY()));  // 根據數據值選擇顏色
+                    pointColors.add(getColorForValue(i, entry.getY()));
+                    if (entry.getY() > maxY) maxY = entry.getY();
+                    if (entry.getY() < minY) minY = entry.getY();
                 }
+
+                // **🔹 設定 Y 軸最大最小範圍**
+                // **確保 minY 不等於 maxY，否則擴展範圍**
+//                float padding = (maxY == minY) ? maxY * 0.1f : (maxY - minY) * 0.1f;
+//                float adjustedMaxY = maxY + padding;
+//                float adjustedMinY = minY - padding;
+//                float adjustedMaxY = maxY + (maxY - minY) * 0.05f;  // 增加 5%
+//                float adjustedMinY = minY - (maxY - minY) * 0.05f;  // 減少 5%
+                float adjustedMaxY = maxY * 1.05f;
+                float adjustedMinY = minY * 0.95f;
+
+//                float minRange = 5f; // 設定一個最小 Y 軸範圍
+//                if ((maxY - minY) < minRange) {
+//                    float centerY = (maxY + minY) / 2;
+//                    adjustedMaxY = centerY + minRange / 2;
+//                    adjustedMinY = centerY - minRange / 2;
+//                }
+
+                charts[i].getAxisLeft().setAxisMaximum(adjustedMaxY);
+                charts[i].getAxisLeft().setAxisMinimum(adjustedMinY);;
+                charts[i].getAxisRight().setEnabled(false);
+
                 LineDataSet dataSet = new LineDataSet(filteredData, label[i]);
                 dataSet.setDrawCircles(true);
                 dataSet.setCircleColors(pointColors);
-                dataSet.setCircleRadius(2f);
+                dataSet.setCircleRadius(1f);
                 dataSet.setDrawCircleHole(false);
                 dataSet.setColor(getResources().getColor(colors[i % colors.length]));
                 dataSet.setValueTextColor(getResources().getColor(android.R.color.black));
                 dataSet.setLineWidth(2f);
                 dataSet.setValueTextSize(10f);
-
+                dataSet.setLineWidth(2f);
                 dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
 
                 LineData lineData = new LineData(dataSet);
                 charts[i].setData(lineData);
-
-                // 設定 X 軸格式
+                charts[i].notifyDataSetChanged();
+                charts[i].invalidate();
+                // **🔹 設定 X 軸格式**
                 XAxis xAxis = charts[i].getXAxis();
                 xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
                 xAxis.setLabelRotationAngle(45);
@@ -136,8 +167,7 @@ public class HistoryFragment extends Fragment {
                 xAxis.setGranularity(1f);
                 xAxis.setValueFormatter(new DateAxisFormatter());
 
-                charts[i].notifyDataSetChanged();
-                charts[i].invalidate();
+
             } else {
                 charts[i].clear();
             }
@@ -148,19 +178,19 @@ public class HistoryFragment extends Fragment {
     private int getColorForValue(int index, float value) {
         switch (index) {
             case 0: // CO (ppm)
-                if (value < 8) return getResources().getColor(R.color.green);
+                if (value < 8) return getResources().getColor(colors[index % colors.length]);
                 if (value < 18) return getResources().getColor(R.color.orange);
                 return getResources().getColor(R.color.red);
             case 1: // O3 (ppb)
-                if (value < 53) return getResources().getColor(R.color.green);
+                if (value < 53) return getResources().getColor(colors[index % colors.length]);
                 if (value < 107) return getResources().getColor(R.color.orange);
                 return getResources().getColor(R.color.red);
             case 2: // PM2.5 (µg/m³)
-                if (value < 67) return getResources().getColor(R.color.green);
+                if (value < 67) return getResources().getColor(colors[index % colors.length]);
                 if (value < 133) return getResources().getColor(R.color.orange);
                 return getResources().getColor(R.color.red);
             case 3: // PM10 (µg/m³)
-                if (value < 167) return getResources().getColor(R.color.green);
+                if (value < 167) return getResources().getColor(colors[index % colors.length]);
                 if (value < 333) return getResources().getColor(R.color.orange);
                 return getResources().getColor(R.color.red);
             default:
