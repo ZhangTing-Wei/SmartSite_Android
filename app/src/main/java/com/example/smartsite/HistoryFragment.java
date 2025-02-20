@@ -150,7 +150,6 @@ public class HistoryFragment extends Fragment {
                 dataSet.setDrawCircleHole(false);
                 dataSet.setColor(getResources().getColor(colors[i % colors.length]));
                 dataSet.setValueTextColor(getResources().getColor(android.R.color.black));
-                dataSet.setLineWidth(2f);
                 dataSet.setValueTextSize(10f);
                 dataSet.setLineWidth(2f);
                 dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
