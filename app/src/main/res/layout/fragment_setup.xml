@@ -15,7 +15,7 @@
         <Switch
             android:id="@+id/switch_wifi"
             android:layout_width="375dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:text="Wi-Fi"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -51,7 +51,7 @@
         <Switch
             android:id="@+id/switch_bluetooth"
             android:layout_width="375dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:text="藍牙"
             android:textSize="20sp"
