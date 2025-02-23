@@ -113,13 +113,13 @@ public class SetupFragment extends Fragment {
         switchWifi.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 recyclerWifi.setVisibility(View.VISIBLE);
-                tvWifiStatus.setText("已開啟");
+                tvWifiStatus.setText("  已開啟");
                 tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
                 checkAndRequestPermissions();
                 scanWifi();
             } else {
                 recyclerWifi.setVisibility(View.GONE);
-                tvWifiStatus.setText("已關閉");
+                tvWifiStatus.setText("  已關閉");
                 tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
             }
         });
@@ -128,13 +128,13 @@ public class SetupFragment extends Fragment {
         switchBluetooth.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 recyclerBluetooth.setVisibility(View.VISIBLE);
-                tvBluetoothStatus.setText("已開啟");
+                tvBluetoothStatus.setText("  已開啟");
                 tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
                 checkAndRequestPermissions();
                 scanBluetooth();
             } else {
                 recyclerBluetooth.setVisibility(View.GONE);
-                tvBluetoothStatus.setText("已關閉");
+                tvBluetoothStatus.setText("  已關閉");
                 tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
             }
         });
