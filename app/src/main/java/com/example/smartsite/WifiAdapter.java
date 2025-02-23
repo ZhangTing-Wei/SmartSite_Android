@@ -11,9 +11,15 @@ import java.util.List;
 public class WifiAdapter extends RecyclerView.Adapter<WifiAdapter.ViewHolder> {
 
     private final List<String> wifiList;
+    private final OnWifiClickListener listener;
 
-    public WifiAdapter(List<String> wifiList) {
+    public interface OnWifiClickListener {
+        void onWifiClick(String ssid);
+    }
+
+    public WifiAdapter(List<String> wifiList, OnWifiClickListener listener) {
         this.wifiList = wifiList;
+        this.listener = listener;
     }
 
     @NonNull
@@ -26,7 +32,15 @@ public class WifiAdapter extends RecyclerView.Adapter<WifiAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.wifiName.setText(wifiList.get(position));
+        String ssid = wifiList.get(position);
+        holder.wifiName.setText(ssid);
+
+        // 設置點擊事件，觸發連線
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onWifiClick(ssid);
+            }
+        });
     }
 
     @Override
