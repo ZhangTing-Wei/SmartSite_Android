@@ -13,9 +13,15 @@ import java.util.List;
 public class BluetoothListAdapter extends RecyclerView.Adapter<BluetoothListAdapter.ViewHolder> {
 
     private final List<String> bluetoothDevices;
+    private final OnBluetoothClickListener listener;
 
-    public BluetoothListAdapter(List<String> bluetoothDevices) {
+    public interface OnBluetoothClickListener {
+        void onBluetoothClick(String deviceName);
+    }
+
+    public BluetoothListAdapter(List<String> bluetoothDevices, OnBluetoothClickListener listener) {
         this.bluetoothDevices = bluetoothDevices;
+        this.listener = listener;
     }
 
     @NonNull
@@ -28,7 +34,15 @@ public class BluetoothListAdapter extends RecyclerView.Adapter<BluetoothListAdap
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.deviceName.setText(bluetoothDevices.get(position));
+        String deviceName = bluetoothDevices.get(position);
+        holder.deviceName.setText(deviceName);
+
+        // 設置點擊事件，觸發連線
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onBluetoothClick(deviceName);
+            }
+        });
     }
 
     @Override
