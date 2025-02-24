@@ -299,6 +299,8 @@ public class SetupFragment extends Fragment {
             selectedWifiSSID = ssid;
             selectedWifiPassword = input.getText().toString();
             Toast.makeText(requireContext(), "已選擇 Wi-Fi: " + selectedWifiSSID, Toast.LENGTH_SHORT).show();
+            // 在這裡關閉 Wi-Fi Switch
+            switchWifi.setChecked(false); // 自動關閉 Wi-Fi Switch
         });
         builder.setNegativeButton("取消", (dialog, which) -> dialog.cancel());
         builder.show();
@@ -344,19 +346,61 @@ public class SetupFragment extends Fragment {
         }).start();
     }
 
-    // 發送 Wi-Fi 憑證到藍牙設備
+    // 發送 Wi-Fi 憑證到藍牙設備並等待回應
     private void sendWifiCredentials(BluetoothSocket socket, String ssid, String password) {
         new Thread(() -> {
             try {
-                String credentials = ssid + "," + password + "\n"; // 格式化為 SSID,密碼\n
+                // 檢查 BLUETOOTH_CONNECT 權限（Android 12+ 需要）
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT)
+                            != PackageManager.PERMISSION_GRANTED) {
+                        requireActivity().runOnUiThread(() ->
+                                Toast.makeText(requireContext(), "缺少藍牙連接權限，無法發送數據", Toast.LENGTH_SHORT).show()
+                        );
+                        return; // 退出方法，避免無權限操作
+                    }
+                }
+
+                // 發送 Wi-Fi 憑證
+                String credentials = ssid + "," + password + "\n";
                 socket.getOutputStream().write(credentials.getBytes());
                 socket.getOutputStream().flush();
-                requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), "Wi-Fi 資訊已發送", Toast.LENGTH_SHORT).show()
-                );
+
+                // 等待 ESP32 的回應
+                byte[] buffer = new byte[1024];
+                int bytesRead = socket.getInputStream().read(buffer); // 阻塞直到收到數據
+                String response = new String(buffer, 0, bytesRead).trim();
+
+                if (response.equals("OK")) {
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "Wi-Fi 資訊已發送並確認", Toast.LENGTH_SHORT).show();
+                        switchBluetooth.setChecked(false);
+                        // 停止藍牙掃描（已包含權限檢查）
+                        if (bluetoothAdapterObj != null && bluetoothAdapterObj.isDiscovering()) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN)
+                                        == PackageManager.PERMISSION_GRANTED) {
+                                    bluetoothAdapterObj.cancelDiscovery();
+                                }
+                            } else {
+                                bluetoothAdapterObj.cancelDiscovery();
+                            }
+                        }
+                    });
+                    socket.close(); // 在收到回應後關閉
+                } else {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(), "ESP32 未正確回應: " + response, Toast.LENGTH_SHORT).show()
+                    );
+                }
             } catch (IOException e) {
                 requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), "發送 Wi-Fi 資訊失敗", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "發送 Wi-Fi 資訊失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+                e.printStackTrace();
+            } catch (SecurityException e) {
+                requireActivity().runOnUiThread(() ->
+                        Toast.makeText(requireContext(), "權限不足，無法操作藍牙: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
                 e.printStackTrace();
             }
