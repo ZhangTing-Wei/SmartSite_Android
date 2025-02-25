@@ -69,19 +69,25 @@ public class HistoryFragment extends Fragment {
         lineChartO3 = view.findViewById(R.id.lineChartO3);
         lineChartPM25 = view.findViewById(R.id.lineChartPM2_5);
         lineChartPM10 = view.findViewById(R.id.lineChartPM10);
-
-
-        // 初始化數據
-        loadCSVData();  // 讀取 CSV 數據
-
         tvSelectedDate = view.findViewById(R.id.tvSelectedDate);
         ivPrevDay = view.findViewById(R.id.ivPrevDay);
         ivNextDay = view.findViewById(R.id.ivNextDay);
 
         calendar = Calendar.getInstance();
 
+        // 初始化當天日期範圍
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        startDateMillis = calendar.getTimeInMillis(); // 當天 00:00:00
+        endDateMillis = startDateMillis + 86400000L - 1; // 當天 23:59:59
+
         // 初始化當前日期
         updateDateDisplay();
+
+        // 初始化數據
+        loadCSVData();  // 讀取 CSV 數據
 
         // 點擊左右箭頭調整日期
         ivPrevDay.setOnClickListener(v -> changeDate(-1)); // 前一天
@@ -99,6 +105,10 @@ public class HistoryFragment extends Fragment {
             Log.e("Chart", "數據為空，無法更新圖表");
             return;
         }
+
+        Log.d("Chart", "更新圖表，數據量：" + allData.get(0).size() +
+                ", 時間範圍：" + sdf.format(new Date(startDateMillis)) + " - " +
+                sdf.format(new Date(endDateMillis)));
 
         LineChart[] charts = {lineChartCO, lineChartO3, lineChartPM25, lineChartPM10};
 
@@ -235,7 +245,6 @@ public class HistoryFragment extends Fragment {
         }
     }
 
-
     // 顯示日期選擇器
     private void showDatePicker() {
         MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
@@ -305,9 +314,7 @@ public class HistoryFragment extends Fragment {
 
         // 確保數據不為空，然後更新圖表
         if (!allData.isEmpty() && !allData.get(0).isEmpty()) {
-            startDateMillis = (long) allData.get(0).get(0).getX();
-            endDateMillis = (long) allData.get(0).get(allData.get(0).size() - 1).getX();
-            updateChart();
+            updateChart(); // 直接更新圖表，使用預設的當天範圍
         }
     }
 
