@@ -25,10 +25,14 @@ import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.smartsite.databinding.FragmentSetupWiFiBinding;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +53,9 @@ public class SetupFragment extends Fragment {
     // 系統服務
     private WifiManager wifiManager; // Wi-Fi 管理器
     private BluetoothAdapter bluetoothAdapterObj; // 藍牙適配器
+
+    private Button btnSetupWiFi;
+    private Button btnSetupBluetooth;
 
     // 數據存儲
     private final List<String> wifiList = new ArrayList<>(); // Wi-Fi SSID 列表
@@ -86,6 +93,8 @@ public class SetupFragment extends Fragment {
         recyclerBluetooth = view.findViewById(R.id.recycler_bluetooth);
         TextView tvWifiStatus = view.findViewById(R.id.tv_wifi_status);
         TextView tvBluetoothStatus = view.findViewById(R.id.tv_bluetooth_status);
+        btnSetupWiFi = view.findViewById(R.id.btn_SetupWiFi);
+        btnSetupBluetooth = view.findViewById(R.id.btn_SetupBluetooth);
 
         // 設置 RecyclerView 的佈局管理器
         recyclerWifi.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -136,6 +145,30 @@ public class SetupFragment extends Fragment {
                 recyclerBluetooth.setVisibility(View.GONE);
                 tvBluetoothStatus.setText("  已關閉");
                 tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+            }
+        });
+
+        btnSetupWiFi.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SetupWiFiFragment setupWiFiFragment = new SetupWiFiFragment();
+                getActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, setupWiFiFragment) // 假設有一個容器
+                        .addToBackStack(null) // 可選：加入返回棧
+                        .commit();
+            }
+        });
+
+        btnSetupBluetooth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SetupBluetoothFragment setupBluetoothFragment = new SetupBluetoothFragment();
+                getActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, setupBluetoothFragment)
+                        .addToBackStack(null)
+                        .commit();
             }
         });
     }
