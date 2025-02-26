@@ -54,7 +54,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="30dp"
                     android:text="一氧化碳 (ppm)"
                     android:textSize="25sp" />
 
@@ -63,7 +63,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="32dp"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="30dp"
                     android:text="臭氧 (ppb)"
                     android:textSize="25sp" />
             </LinearLayout>
@@ -110,6 +110,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp"
+                    android:layout_marginTop="5dp"
                     android:text="PM2.5 (µg/m³)"
                     android:textSize="25sp" />
 
@@ -118,6 +119,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="16dp"
+                    android:layout_marginTop="5dp"
                     android:text="PM10 (µg/m³)"
                     android:textSize="25sp" />
             </LinearLayout>
@@ -163,6 +165,7 @@
                     android:id="@+id/button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:layout_weight="1"
                     android:text="Button" />
 
@@ -170,6 +173,7 @@
                     android:id="@+id/button2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:layout_weight="1"
                     android:text="Button" />
 
@@ -177,6 +181,7 @@
                     android:id="@+id/button3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:layout_weight="1"
                     android:text="Button" />
             </LinearLayout>
