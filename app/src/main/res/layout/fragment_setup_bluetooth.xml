@@ -29,7 +29,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
                 android:layout_marginTop="4dp"
-                android:text="  已關閉"
+                android:paddingLeft="8dp"
+                android:text="已關閉"
                 android:textColor="@android:color/darker_gray"
                 android:textSize="14sp" />
 
