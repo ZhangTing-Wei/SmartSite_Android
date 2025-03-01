@@ -12,11 +12,13 @@ import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,6 +28,7 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +51,7 @@ public class SetupWiFiFragment extends Fragment {
     private BluetoothDevice bluetoothDevice; // 新增變數
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private boolean isDevicePending = false;
+    private final Object socketLock = new Object(); // 新增鎖物件
 
     // 接收藍牙連接
     public void setBluetoothSocket(BluetoothSocket socket) {
@@ -218,6 +222,14 @@ public class SetupWiFiFragment extends Fragment {
             isWifiReceiverRegistered = false;
             Log.d(TAG, "Wi-Fi receiver unregistered");
         }
+        if (wifiManager != null && bluetoothSocket != null) { // 添加 wifiManager 檢查
+            try {
+                bluetoothSocket.close();
+                Log.d(TAG, "Bluetooth socket closed");
+            } catch (IOException e) {
+                Log.e(TAG, "Failed to close Bluetooth socket: " + e.getMessage());
+            }
+        }
     }
 
     private void showWifiPasswordDialog(String ssid) {
@@ -247,67 +259,69 @@ public class SetupWiFiFragment extends Fragment {
         Toast.makeText(requireContext(), "發送 Wi-Fi 憑證: " + ssid, Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
-                if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
-                    Log.w(TAG, "Bluetooth socket is null or not connected, attempting to reconnect");
-                    if (bluetoothDevice == null) {
-                        Log.w(TAG, "Bluetooth device is null, cannot reconnect");
-                        requireActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(), "藍牙設備不可用", Toast.LENGTH_SHORT).show()
-                        );
-                        return;
+                synchronized (socketLock) { // 同步訪問 bluetoothSocket
+                    if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
+                        Log.w(TAG, "Bluetooth socket is null or not connected, attempting to reconnect");
+                        if (bluetoothDevice == null) {
+                            Log.w(TAG, "Bluetooth device is null, cannot reconnect");
+                            requireActivity().runOnUiThread(() ->
+                                    Toast.makeText(requireContext(), "藍牙設備不可用", Toast.LENGTH_SHORT).show()
+                            );
+                            return;
+                        }
+
+                        // 檢查權限
+                        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                            Log.w(TAG, "BLUETOOTH_CONNECT permission not granted");
+                            requireActivity().runOnUiThread(() ->
+                                    Toast.makeText(requireContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
+                            );
+                            return;
+                        }
+
+                        // 重新連接並處理 SecurityException
+                        try {
+                            bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(MY_UUID);
+                            bluetoothSocket.connect();
+                            Log.d(TAG, "Reconnected to Bluetooth device");
+                        } catch (SecurityException e) {
+                            Log.e(TAG, "SecurityException during reconnect: " + e.getMessage());
+                            requireActivity().runOnUiThread(() ->
+                                    Toast.makeText(requireContext(), "藍牙連接權限被拒絕: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
+                            return;
+                        } catch (IOException e) {
+                            Log.e(TAG, "IOException during reconnect: " + e.getMessage());
+                            requireActivity().runOnUiThread(() ->
+                                    Toast.makeText(requireContext(), "藍牙重連失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
+                            return;
+                        }
                     }
 
-                    // 檢查權限
-                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                        Log.w(TAG, "BLUETOOTH_CONNECT permission not granted");
+                    // 發送 Wi-Fi 憑證
+                    String credentials = ssid + "," + password + "\n";
+                    bluetoothSocket.getOutputStream().write(credentials.getBytes());
+                    bluetoothSocket.getOutputStream().flush();
+                    Log.d(TAG, "Wi-Fi credentials sent successfully");
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = bluetoothSocket.getInputStream().read(buffer);
+                    String response = new String(buffer, 0, bytesRead).trim();
+                    Log.d(TAG, "Received response from ESP32: " + response);
+
+                    if (response.equals("OK")) {
                         requireActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(requireContext(), "Wi-Fi資訊已發送並確認", Toast.LENGTH_SHORT).show()
                         );
-                        return;
+                    } else {
+                        requireActivity().runOnUiThread(() ->
+                                Toast.makeText(requireContext(), "ESP32未正確回應: " + response, Toast.LENGTH_SHORT).show()
+                        );
                     }
-
-                    // 重新連接並處理 SecurityException
-                    try {
-                        bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(MY_UUID);
-                        bluetoothSocket.connect();
-                        Log.d(TAG, "Reconnected to Bluetooth device");
-                    } catch (SecurityException e) {
-                        Log.e(TAG, "SecurityException during reconnect: " + e.getMessage());
-                        requireActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(), "藍牙連接權限被拒絕: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                        );
-                        return;
-                    } catch (IOException e) {
-                        Log.e(TAG, "IOException during reconnect: " + e.getMessage());
-                        requireActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(), "藍牙重連失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                        );
-                        return;
-                    }
-                }
-
-                // 發送 Wi-Fi 憑證
-                String credentials = ssid + "," + password + "\n";
-                bluetoothSocket.getOutputStream().write(credentials.getBytes());
-                bluetoothSocket.getOutputStream().flush();
-                Log.d(TAG, "Wi-Fi credentials sent successfully");
-
-                byte[] buffer = new byte[1024];
-                int bytesRead = bluetoothSocket.getInputStream().read(buffer);
-                String response = new String(buffer, 0, bytesRead).trim();
-                Log.d(TAG, "Received response from ESP32: " + response);
-
-                if (response.equals("OK")) {
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(), "Wi-Fi資訊已發送並確認", Toast.LENGTH_SHORT).show()
-                    );
-                } else {
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(), "ESP32未正確回應: " + response, Toast.LENGTH_SHORT).show()
-                    );
                 }
             } catch (IOException e) {
-                Log.e(TAG, "Failed to send Wi-Fi credentials: " + e.getMessage());
+                Log.e(TAG, "Failed to send Wi-Fi credentials: " + e.getMessage(), e);
                 requireActivity().runOnUiThread(() ->
                         Toast.makeText(requireContext(), "發送失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );

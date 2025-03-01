@@ -63,8 +63,8 @@ public class SetupFragment extends Fragment {
         btnSetupWiFi.setOnClickListener(v -> {
             Log.d(TAG, "Wi-Fi setup button clicked, Bluetooth connected: " + (bluetoothSocket != null && bluetoothSocket.isConnected()));
             Toast.makeText(requireContext(), "嘗試開啟Wi-Fi設置", Toast.LENGTH_SHORT).show();
-            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
-                Log.w(TAG, "Bluetooth not connected or socket null");
+            if (bluetoothSocket == null || !bluetoothSocket.isConnected() || bluetoothDevice == null) {
+                Log.w(TAG, "Bluetooth not connected, socket null, or device null");
                 Toast.makeText(requireContext(), "請先連接藍牙設備", Toast.LENGTH_SHORT).show();
                 return;
             }
