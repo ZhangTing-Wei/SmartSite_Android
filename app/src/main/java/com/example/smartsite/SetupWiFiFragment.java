@@ -36,7 +36,7 @@ import java.util.UUID;
 
 public class SetupWiFiFragment extends Fragment {
 
-    private static final String TAG = "SetupWiFiFragment"; // 日誌標籤
+    private static final String TAG = "SetupWiFiFragment";
     private Switch switchWifi;
     private RecyclerView recyclerWifi;
     private WifiAdapter wifiAdapter;
@@ -48,17 +48,16 @@ public class SetupWiFiFragment extends Fragment {
     private boolean isWifiReceiverRegistered = false;
     private BluetoothSocket bluetoothSocket;
     private boolean isSocketPending = false;
-    private BluetoothDevice bluetoothDevice; // 新增變數
+    private BluetoothDevice bluetoothDevice;
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private boolean isDevicePending = false;
-    private final Object socketLock = new Object(); // 新增鎖物件
+    private final Object socketLock = new Object();
 
-    // 接收藍牙連接
     public void setBluetoothSocket(BluetoothSocket socket) {
         this.bluetoothSocket = socket;
         Log.d(TAG, "Setting Bluetooth socket: " + (socket != null ? "valid" : "null") + ", connected: " + (socket != null && socket.isConnected()));
-        if (isAdded()) {
-            Toast.makeText(requireContext(), "藍牙連接設置: " + (socket != null ? "有效" : "無效"), Toast.LENGTH_SHORT).show();
+        if (isAdded() && getContext() != null) {
+            Toast.makeText(getContext(), "藍牙連接設置: " + (socket != null ? "有效" : "無效"), Toast.LENGTH_SHORT).show();
         } else {
             isSocketPending = true;
             Log.w(TAG, "Fragment not attached yet, socket pending");
@@ -67,11 +66,11 @@ public class SetupWiFiFragment extends Fragment {
 
     public void setBluetoothDevice(BluetoothDevice device) {
         Log.d(TAG, "Setting Bluetooth device");
-        if (isAdded()) { // 檢查 Fragment 是否已附加到 Activity
+        if (isAdded() && getContext() != null) {
             this.bluetoothDevice = device;
             String deviceName = "null";
             if (device != null) {
-                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                     try {
                         deviceName = device.getName() != null ? device.getName() : "unknown";
                     } catch (SecurityException e) {
@@ -86,7 +85,7 @@ public class SetupWiFiFragment extends Fragment {
             Log.d(TAG, "Bluetooth device set: " + deviceName);
         } else {
             this.bluetoothDevice = device;
-            isDevicePending = true; // 標記設備待處理
+            isDevicePending = true;
             Log.w(TAG, "Fragment not attached yet, device pending");
         }
     }
@@ -95,7 +94,11 @@ public class SetupWiFiFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate called");
         super.onCreate(savedInstanceState);
-        wifiManager = (WifiManager) requireContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (getContext() != null) {
+            wifiManager = (WifiManager) getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        } else {
+            Log.w(TAG, "Context not available in onCreate, wifiManager initialization delayed");
+        }
     }
 
     @Override
@@ -111,9 +114,9 @@ public class SetupWiFiFragment extends Fragment {
         wifiAdapter = new WifiAdapter(wifiList, this::showWifiPasswordDialog);
         recyclerWifi.setAdapter(wifiAdapter);
 
-        if (isDevicePending && bluetoothDevice != null) {
+        if (isDevicePending && bluetoothDevice != null && getContext() != null) {
             String deviceName = "null";
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                 try {
                     deviceName = bluetoothDevice.getName() != null ? bluetoothDevice.getName() : "unknown";
                 } catch (SecurityException e) {
@@ -128,28 +131,40 @@ public class SetupWiFiFragment extends Fragment {
             isDevicePending = false;
         }
 
-        if (isSocketPending && bluetoothSocket != null) {
-            Toast.makeText(requireContext(), "藍牙連接設置: " + (bluetoothSocket != null ? "有效" : "無效"), Toast.LENGTH_SHORT).show();
+        if (isSocketPending && bluetoothSocket != null && getContext() != null) {
+            Toast.makeText(getContext(), "藍牙連接設置: " + (bluetoothSocket != null ? "有效" : "無效"), Toast.LENGTH_SHORT).show();
             isSocketPending = false;
         }
 
         switchWifi.setOnCheckedChangeListener((buttonView, isChecked) -> {
             Log.d(TAG, "Wi-Fi switch changed: " + isChecked);
-            Toast.makeText(requireContext(), "Wi-Fi switch: " + (isChecked ? "On" : "Off"), Toast.LENGTH_SHORT).show();
+            if (!isAdded() || getContext() == null) {
+                Log.w(TAG, "Fragment not attached, skipping switch action");
+                return;
+            }
+            Toast.makeText(getContext(), "Wi-Fi switch: " + (isChecked ? "On" : "Off"), Toast.LENGTH_SHORT).show();
             if (isChecked) {
                 recyclerWifi.setVisibility(View.VISIBLE);
                 tvWifiStatus.setText("已開啟");
-                tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+                tvWifiStatus.setTextColor(ContextCompat.getColor(getContext(), android.R.color.holo_green_dark));
                 checkAndRequestPermissions();
                 scanWifi();
             } else {
                 recyclerWifi.setVisibility(View.GONE);
                 tvWifiStatus.setText("已關閉");
-                tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+                tvWifiStatus.setTextColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
             }
         });
 
         return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (switchWifi != null && switchWifi.isChecked()) {
+            scanWifi();
+        }
     }
 
     private final BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
@@ -170,16 +185,18 @@ public class SetupWiFiFragment extends Fragment {
                 }
             }
             wifiAdapter.notifyDataSetChanged();
-//            Toast.makeText(requireContext(), "發現 " + wifiList.size() + " 個 Wi-Fi 网络", Toast.LENGTH_SHORT).show();
         }
     };
 
     private void scanWifi() {
         Log.d(TAG, "Starting Wi-Fi scan");
-//        Toast.makeText(requireContext(), "開始掃描 Wi-Fi 網絡", Toast.LENGTH_SHORT).show();
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "Fragment not attached, skipping Wi-Fi scan");
+            return;
+        }
         if (wifiManager == null || !wifiManager.isWifiEnabled()) {
             Log.w(TAG, "Wi-Fi manager is null or not enabled");
-            Toast.makeText(requireContext(), "請開啟 Wi-Fi", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "請開啟 Wi-Fi", Toast.LENGTH_SHORT).show();
             return;
         }
         if (!hasWifiPermissions()) {
@@ -188,7 +205,7 @@ public class SetupWiFiFragment extends Fragment {
             return;
         }
         if (!isWifiReceiverRegistered) {
-            requireContext().registerReceiver(wifiReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+            getContext().registerReceiver(wifiReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
             isWifiReceiverRegistered = true;
             Log.d(TAG, "Wi-Fi receiver registered");
         }
@@ -199,7 +216,12 @@ public class SetupWiFiFragment extends Fragment {
     }
 
     private boolean hasWifiPermissions() {
-        boolean hasPermission = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        Context context = getContext();
+        if (context == null) {
+            Log.w(TAG, "Context not available, skipping permission check");
+            return false;
+        }
+        boolean hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
         Log.d(TAG, "Wi-Fi permissions - Location: " + hasPermission);
         return hasPermission;
@@ -207,6 +229,10 @@ public class SetupWiFiFragment extends Fragment {
 
     private void checkAndRequestPermissions() {
         Log.d(TAG, "Checking Wi-Fi permissions");
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "Fragment not attached, skipping permission request");
+            return;
+        }
         if (!hasWifiPermissions()) {
             Log.w(TAG, "Requesting Wi-Fi permissions");
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_PERMISSIONS);
@@ -217,36 +243,35 @@ public class SetupWiFiFragment extends Fragment {
     public void onDestroyView() {
         Log.d(TAG, "onDestroyView called");
         super.onDestroyView();
-        if (isWifiReceiverRegistered) {
-            requireContext().unregisterReceiver(wifiReceiver);
-            isWifiReceiverRegistered = false;
-            Log.d(TAG, "Wi-Fi receiver unregistered");
-        }
-        if (wifiManager != null && bluetoothSocket != null) { // 添加 wifiManager 檢查
+        if (isWifiReceiverRegistered && getContext() != null) {
             try {
-                bluetoothSocket.close();
-                Log.d(TAG, "Bluetooth socket closed");
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to close Bluetooth socket: " + e.getMessage());
+                getContext().unregisterReceiver(wifiReceiver);
+                isWifiReceiverRegistered = false;
+                Log.d(TAG, "Wi-Fi receiver unregistered");
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "Receiver not registered: " + e.getMessage());
             }
         }
     }
 
     private void showWifiPasswordDialog(String ssid) {
         Log.d(TAG, "Showing Wi-Fi password dialog for SSID: " + ssid);
-        Toast.makeText(requireContext(), "選擇 Wi-Fi: " + ssid, Toast.LENGTH_SHORT).show();
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "Fragment not attached, skipping dialog");
+            return;
+        }
+        Toast.makeText(getContext(), "選擇 Wi-Fi: " + ssid, Toast.LENGTH_SHORT).show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("連接到 " + ssid);
-        final EditText input = new EditText(requireContext());
+        final EditText input = new EditText(getContext());
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         builder.setView(input);
         builder.setPositiveButton("確定", (dialog, which) -> {
             selectedWifiSSID = ssid;
             selectedWifiPassword = input.getText().toString();
             Log.d(TAG, "Selected Wi-Fi: " + selectedWifiSSID + ", Password: " + selectedWifiPassword);
-            Toast.makeText(requireContext(), "已選擇 Wi-Fi: " + selectedWifiSSID, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "已選擇 Wi-Fi: " + selectedWifiSSID, Toast.LENGTH_SHORT).show();
             sendWifiCredentials(selectedWifiSSID, selectedWifiPassword);
-//            switchWifi.setChecked(false); // 傳送後關閉Wi-Fi開關
             recyclerWifi.setVisibility(View.GONE);
         });
         builder.setNegativeButton("取消", (dialog, which) -> dialog.cancel());
@@ -256,30 +281,32 @@ public class SetupWiFiFragment extends Fragment {
     private void sendWifiCredentials(String ssid, String password) {
         Log.d(TAG, "Sending Wi-Fi credentials: SSID=" + ssid + ", Password=" + password);
         Log.d(TAG, "BluetoothSocket state: " + (bluetoothSocket != null ? "valid" : "null") + ", connected: " + (bluetoothSocket != null && bluetoothSocket.isConnected()));
-        Toast.makeText(requireContext(), "發送 Wi-Fi 憑證: " + ssid, Toast.LENGTH_SHORT).show();
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "Fragment not attached, skipping send credentials");
+            return;
+        }
+        Toast.makeText(getContext(), "發送 Wi-Fi 憑證: " + ssid, Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
-                synchronized (socketLock) { // 同步訪問 bluetoothSocket
+                synchronized (socketLock) {
                     if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
                         Log.w(TAG, "Bluetooth socket is null or not connected, attempting to reconnect");
                         if (bluetoothDevice == null) {
                             Log.w(TAG, "Bluetooth device is null, cannot reconnect");
                             requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(requireContext(), "藍牙設備不可用", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(getContext(), "藍牙設備不可用", Toast.LENGTH_SHORT).show()
                             );
                             return;
                         }
 
-                        // 檢查權限
-                        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                             Log.w(TAG, "BLUETOOTH_CONNECT permission not granted");
                             requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(requireContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(getContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
                             );
                             return;
                         }
 
-                        // 重新連接並處理 SecurityException
                         try {
                             bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(MY_UUID);
                             bluetoothSocket.connect();
@@ -287,19 +314,18 @@ public class SetupWiFiFragment extends Fragment {
                         } catch (SecurityException e) {
                             Log.e(TAG, "SecurityException during reconnect: " + e.getMessage());
                             requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(requireContext(), "藍牙連接權限被拒絕: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(getContext(), "藍牙連接權限被拒絕: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                             );
                             return;
                         } catch (IOException e) {
                             Log.e(TAG, "IOException during reconnect: " + e.getMessage());
                             requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(requireContext(), "藍牙重連失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(getContext(), "藍牙重連失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                             );
                             return;
                         }
                     }
 
-                    // 發送 Wi-Fi 憑證
                     String credentials = ssid + "," + password + "\n";
                     bluetoothSocket.getOutputStream().write(credentials.getBytes());
                     bluetoothSocket.getOutputStream().flush();
@@ -312,18 +338,18 @@ public class SetupWiFiFragment extends Fragment {
 
                     if (response.equals("OK")) {
                         requireActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(), "Wi-Fi資訊已發送並確認", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(getContext(), "Wi-Fi資訊已發送並確認", Toast.LENGTH_SHORT).show()
                         );
                     } else {
                         requireActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(), "ESP32未正確回應: " + response, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(getContext(), "ESP32未正確回應: " + response, Toast.LENGTH_SHORT).show()
                         );
                     }
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Failed to send Wi-Fi credentials: " + e.getMessage(), e);
                 requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), "發送失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(getContext(), "發送失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
             }
         }).start();

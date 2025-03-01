@@ -1,16 +1,24 @@
 package com.example.smartsite;
 
+import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
+
 import java.io.IOException;
+import java.util.UUID;
 
 public class SetupFragment extends Fragment {
 
@@ -65,22 +73,63 @@ public class SetupFragment extends Fragment {
             Toast.makeText(requireContext(), "嘗試開啟Wi-Fi設置", Toast.LENGTH_SHORT).show();
             if (bluetoothSocket == null || !bluetoothSocket.isConnected() || bluetoothDevice == null) {
                 Log.w(TAG, "Bluetooth not connected, socket null, or device null");
-                Toast.makeText(requireContext(), "請先連接藍牙設備", Toast.LENGTH_SHORT).show();
+                if (bluetoothDevice != null) {
+                    // 嘗試重新連接
+                    new Thread(() -> {
+                        try {
+                            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                                bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
+                                bluetoothSocket.connect();
+                                Log.d(TAG, "Bluetooth reconnected successfully");
+                                proceedToWiFiSetup();
+                            } else {
+                                requireActivity().runOnUiThread(() ->
+                                        Toast.makeText(requireContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
+                                );
+                            }
+                        } catch (IOException e) {
+                            Log.e(TAG, "Failed to reconnect Bluetooth: " + e.getMessage());
+                            requireActivity().runOnUiThread(() ->
+                                    Toast.makeText(requireContext(), "藍牙重連失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
+                        } catch (SecurityException e) {
+                            Log.e(TAG, "Security exception occurred: " + e.getMessage());
+                            requireActivity().runOnUiThread(() ->
+                                    Toast.makeText(requireContext(), "藍牙權限被拒絕: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
+                        }
+                    }).start();
+                } else {
+                    Toast.makeText(requireContext(), "請先連接藍牙設備", Toast.LENGTH_SHORT).show();
+                }
                 return;
             }
-            SetupWiFiFragment fragment = new SetupWiFiFragment();
-            fragment.setBluetoothSocket(bluetoothSocket); // 傳遞藍牙連接
-            fragment.setBluetoothDevice(bluetoothDevice); // 傳遞設備
-            getActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, fragment)
-                    .addToBackStack(null)
-                    .commit();
+            proceedToWiFiSetup();
         });
 
         // 初始時禁用Wi-Fi設置按鈕，直到藍牙連接成功
         Log.d(TAG, "Initializing Wi-Fi button as disabled: " + btnSetupWiFi.isEnabled() + ", Clickable: " + btnSetupWiFi.isClickable());
 //        btnSetupWiFi.setEnabled(false);
+
+        if (savedInstanceState != null && bluetoothDevice == null) {
+            String address = savedInstanceState.getString("device_address");
+            if (address != null) {
+                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+                bluetoothDevice = adapter.getRemoteDevice(address);
+                // 可選：嘗試恢復連接
+            }
+        }
+    }
+
+    private void proceedToWiFiSetup() {
+        SetupWiFiFragment fragment = new SetupWiFiFragment();
+        fragment.setBluetoothSocket(bluetoothSocket);
+        fragment.setBluetoothDevice(bluetoothDevice);
+        getActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override
@@ -95,6 +144,14 @@ public class SetupFragment extends Fragment {
                 Log.e(TAG, "Failed to close Bluetooth socket: " + e.getMessage());
                 e.printStackTrace();
             }
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (bluetoothDevice != null) {
+            outState.putString("device_address", bluetoothDevice.getAddress());
         }
     }
 }
