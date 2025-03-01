@@ -42,6 +42,7 @@ public class SetupBluetoothFragment extends Fragment {
     private boolean isBluetoothReceiverRegistered = false;
     private BluetoothConnectionListener connectionListener;
     private BluetoothDevice connectedDevice; // 新增變數保存已連接的設備
+    private final Object deviceLock = new Object(); // 新增鎖物件
 
     // 回調介面，用於傳遞藍牙連接
     public interface BluetoothConnectionListener {
@@ -173,42 +174,44 @@ public class SetupBluetoothFragment extends Fragment {
         }
 
         new Thread(() -> {
-            try {
-                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    Log.w(TAG, "Bluetooth connect permission not granted in thread");
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
-                    );
-                    return;
-                }
-                BluetoothSocket socket = device.createRfcommSocketToServiceRecord(MY_UUID);
-                socket.connect();
-                connectedDevice = device; // 保存已連接的設備
-                Log.d(TAG, "Bluetooth connection established to: " + deviceName);
-                requireActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "藍牙連接成功：" + deviceName, Toast.LENGTH_SHORT).show();
-//                    switchBluetooth.setChecked(false); // 連接成功後關閉開關
-                    recyclerBluetooth.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "觸發回調給 SetupFragment", Toast.LENGTH_SHORT).show();
-                    if (connectionListener != null) {
-                        Log.d(TAG, "Calling connectionListener with socket");
-                        connectionListener.onConnected(socket);
-                    } else {
-                        Log.w(TAG, "connectionListener is null");
-                        Toast.makeText(requireContext(), "回調監聽器為空", Toast.LENGTH_SHORT).show();
+            synchronized (deviceLock) { // 同步訪問 bluetoothSocket 和 connectedDevice
+                try {
+                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT)
+                            != PackageManager.PERMISSION_GRANTED) {
+                        Log.w(TAG, "Bluetooth connect permission not granted in thread");
+                        requireActivity().runOnUiThread(() ->
+                                Toast.makeText(requireContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
+                        );
+                        return;
                     }
-                });
-            } catch (IOException e) {
-                Log.e(TAG, "Bluetooth connection failed: " + e.getMessage());
-                requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), "藍牙連接失敗：" + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
-            } catch (SecurityException e) {
-                Log.e(TAG, "Security exception: " + e.getMessage());
-                requireActivity().runOnUiThread(() ->
-                        Toast.makeText(requireContext(), "權限不足：" + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+                    BluetoothSocket socket = device.createRfcommSocketToServiceRecord(MY_UUID);
+                    socket.connect();
+                    connectedDevice = device; // 保存已連接的設備
+                    Log.d(TAG, "Bluetooth connection established to: " + deviceName);
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(), "藍牙連接成功：" + deviceName, Toast.LENGTH_SHORT).show();
+//                    switchBluetooth.setChecked(false); // 連接成功後關閉開關
+                        recyclerBluetooth.setVisibility(View.GONE);
+                        Toast.makeText(requireContext(), "觸發回調給 SetupFragment", Toast.LENGTH_SHORT).show();
+                        if (connectionListener != null) {
+                            Log.d(TAG, "Calling connectionListener with socket");
+                            connectionListener.onConnected(socket);
+                        } else {
+                            Log.w(TAG, "connectionListener is null");
+                            Toast.makeText(requireContext(), "回調監聽器為空", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } catch (IOException e) {
+                    Log.e(TAG, "Bluetooth connection failed: " + e.getMessage());
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(), "藍牙連接失敗：" + e.getMessage(), Toast.LENGTH_SHORT).show()
+                    );
+                } catch (SecurityException e) {
+                    Log.e(TAG, "Security exception: " + e.getMessage());
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(), "權限不足：" + e.getMessage(), Toast.LENGTH_SHORT).show()
+                    );
+                }
             }
         }).start();
     }
@@ -239,7 +242,7 @@ public class SetupBluetoothFragment extends Fragment {
     public void onDestroyView() {
         Log.d(TAG, "onDestroyView called");
         super.onDestroyView();
-        if (isBluetoothReceiverRegistered) {
+        if (bluetoothAdapterObj != null && isBluetoothReceiverRegistered) { // 添加 bluetoothAdapterObj 檢查
             requireContext().unregisterReceiver(bluetoothReceiver);
             isBluetoothReceiverRegistered = false;
             Log.d(TAG, "Bluetooth receiver unregistered");
