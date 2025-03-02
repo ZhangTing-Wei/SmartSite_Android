@@ -52,6 +52,23 @@ public class SetupWiFiFragment extends Fragment {
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private boolean isDevicePending = false;
     private final Object socketLock = new Object();
+    private boolean initialWifiState = false;
+
+    // 新增方法設置初始狀態
+    public void setInitialWifiState(boolean isEnabled) {
+        this.initialWifiState = isEnabled;
+    }
+
+    // 新增狀態監聽器介面
+    public interface WifiStateListener {
+        void onWifiStateChanged(boolean isEnabled);
+    }
+
+    private WifiStateListener stateListener;
+
+    public void setWifiStateListener(WifiStateListener listener) {
+        this.stateListener = listener;
+    }
 
     public void setBluetoothSocket(BluetoothSocket socket) {
         this.bluetoothSocket = socket;
@@ -136,6 +153,20 @@ public class SetupWiFiFragment extends Fragment {
             isSocketPending = false;
         }
 
+        // 設置初始狀態
+        switchWifi.setChecked(initialWifiState);
+        if (initialWifiState) {
+            recyclerWifi.setVisibility(View.VISIBLE);
+            tvWifiStatus.setText("已開啟");
+            tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+            checkAndRequestPermissions();
+            scanWifi();
+        } else {
+            recyclerWifi.setVisibility(View.GONE);
+            tvWifiStatus.setText("已關閉");
+            tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+        }
+
         switchWifi.setOnCheckedChangeListener((buttonView, isChecked) -> {
             Log.d(TAG, "Wi-Fi switch changed: " + isChecked);
             if (!isAdded() || getContext() == null) {
@@ -153,6 +184,10 @@ public class SetupWiFiFragment extends Fragment {
                 recyclerWifi.setVisibility(View.GONE);
                 tvWifiStatus.setText("已關閉");
                 tvWifiStatus.setTextColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
+            }
+            // 通知狀態變化
+            if (stateListener != null) {
+                stateListener.onWifiStateChanged(isChecked);
             }
         });
 

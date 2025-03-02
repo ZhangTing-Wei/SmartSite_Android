@@ -15,20 +15,23 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.UUID;
 
-public class SetupFragment extends Fragment {
+public class SetupFragment extends Fragment implements SetupBluetoothFragment.BluetoothStateListener, SetupWiFiFragment.WifiStateListener {
 
-    private static final String TAG = "SetupFragment"; // 日誌標籤
+    private static final String TAG = "SetupFragment";
     private Button btnSetupBluetooth, btnSetupWiFi;
-    private BluetoothSocket bluetoothSocket; // 儲存藍牙連接
-    private BluetoothDevice bluetoothDevice; // 新增變數
+    private TextView tvBluetoothStatus, tvWifiStatus;
+    private BluetoothSocket bluetoothSocket;
+    private BluetoothDevice bluetoothDevice;
+    private boolean isBluetoothEnabled = false;
+    private boolean isWifiEnabled = false;
 
     public SetupFragment() {
-        // 空的構造函數
     }
 
     @Override
@@ -44,22 +47,26 @@ public class SetupFragment extends Fragment {
 
         btnSetupBluetooth = view.findViewById(R.id.btn_SetupBluetooth);
         btnSetupWiFi = view.findViewById(R.id.btn_SetupWiFi);
+        tvBluetoothStatus = view.findViewById(R.id.textView10);
+        tvWifiStatus = view.findViewById(R.id.textView11);
 
-        // 藍牙設置按鈕
+        updateBluetoothStatusUI();
+        updateWifiStatusUI();
+
         btnSetupBluetooth.setOnClickListener(v -> {
             Log.d(TAG, "Bluetooth setup button clicked");
             Toast.makeText(requireContext(), "開啟藍牙設置", Toast.LENGTH_SHORT).show();
             SetupBluetoothFragment fragment = new SetupBluetoothFragment();
             fragment.setBluetoothConnectionListener(socket -> {
-                this.bluetoothSocket = socket; // 儲存藍牙連接
-                this.bluetoothDevice = fragment.getConnectedDevice(); // 保存設備
+                this.bluetoothSocket = socket;
+                this.bluetoothDevice = fragment.getConnectedDevice();
                 Log.d(TAG, "Bluetooth connected: " + (bluetoothSocket != null && bluetoothSocket.isConnected()));
                 requireActivity().runOnUiThread(() -> {
-//                    btnSetupWiFi.setEnabled(true); // 藍牙連接成功後啟用Wi-Fi設置
-                    Log.d(TAG, "Wi-Fi button enabled: " + btnSetupWiFi.isEnabled() + ", Clickable: " + btnSetupWiFi.isClickable());
                     Toast.makeText(requireContext(), "藍牙已連接，可以設置Wi-Fi", Toast.LENGTH_SHORT).show();
                 });
             });
+            fragment.setBluetoothStateListener(this);
+            fragment.setInitialBluetoothState(isBluetoothEnabled); // 傳遞當前藍牙狀態
             getActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, fragment)
@@ -67,14 +74,12 @@ public class SetupFragment extends Fragment {
                     .commit();
         });
 
-        // Wi-Fi設置按鈕
         btnSetupWiFi.setOnClickListener(v -> {
             Log.d(TAG, "Wi-Fi setup button clicked, Bluetooth connected: " + (bluetoothSocket != null && bluetoothSocket.isConnected()));
             Toast.makeText(requireContext(), "嘗試開啟Wi-Fi設置", Toast.LENGTH_SHORT).show();
             if (bluetoothSocket == null || !bluetoothSocket.isConnected() || bluetoothDevice == null) {
                 Log.w(TAG, "Bluetooth not connected, socket null, or device null");
                 if (bluetoothDevice != null) {
-                    // 嘗試重新連接
                     new Thread(() -> {
                         try {
                             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
@@ -107,17 +112,44 @@ public class SetupFragment extends Fragment {
             proceedToWiFiSetup();
         });
 
-        // 初始時禁用Wi-Fi設置按鈕，直到藍牙連接成功
-        Log.d(TAG, "Initializing Wi-Fi button as disabled: " + btnSetupWiFi.isEnabled() + ", Clickable: " + btnSetupWiFi.isClickable());
-//        btnSetupWiFi.setEnabled(false);
-
-        if (savedInstanceState != null && bluetoothDevice == null) {
+        if (savedInstanceState != null) {
+            isBluetoothEnabled = savedInstanceState.getBoolean("bluetooth_state", false);
+            isWifiEnabled = savedInstanceState.getBoolean("wifi_state", false);
             String address = savedInstanceState.getString("device_address");
             if (address != null) {
                 BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
                 bluetoothDevice = adapter.getRemoteDevice(address);
-                // 可選：嘗試恢復連接
             }
+            updateBluetoothStatusUI();
+            updateWifiStatusUI();
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart called, Bluetooth state: " + isBluetoothEnabled + ", Wi-Fi state: " + isWifiEnabled);
+        updateBluetoothStatusUI();
+        updateWifiStatusUI();
+    }
+
+    private void updateBluetoothStatusUI() {
+        if (isBluetoothEnabled) {
+            tvBluetoothStatus.setText("已開啟");
+            tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+        } else {
+            tvBluetoothStatus.setText("已關閉");
+            tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+        }
+    }
+
+    private void updateWifiStatusUI() {
+        if (isWifiEnabled) {
+            tvWifiStatus.setText("已開啟");
+            tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+        } else {
+            tvWifiStatus.setText("已關閉");
+            tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
         }
     }
 
@@ -125,6 +157,8 @@ public class SetupFragment extends Fragment {
         SetupWiFiFragment fragment = new SetupWiFiFragment();
         fragment.setBluetoothSocket(bluetoothSocket);
         fragment.setBluetoothDevice(bluetoothDevice);
+        fragment.setWifiStateListener(this);
+        fragment.setInitialWifiState(isWifiEnabled);
         getActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, fragment)
@@ -133,12 +167,26 @@ public class SetupFragment extends Fragment {
     }
 
     @Override
+    public void onBluetoothStateChanged(boolean isEnabled) {
+        Log.d(TAG, "Bluetooth State " + isEnabled);
+        isBluetoothEnabled = isEnabled;
+        updateBluetoothStatusUI();
+    }
+
+    @Override
+    public void onWifiStateChanged(boolean isEnabled) {
+        Log.d(TAG, "WiFi State " + isEnabled);
+        isWifiEnabled = isEnabled;
+        updateWifiStatusUI();
+    }
+
+    @Override
     public void onDestroyView() {
         Log.d(TAG, "onDestroyView called");
         super.onDestroyView();
         if (bluetoothSocket != null) {
             try {
-                bluetoothSocket.close(); // 清理藍牙連接
+                bluetoothSocket.close();
                 Log.d(TAG, "Bluetooth socket closed");
             } catch (IOException e) {
                 Log.e(TAG, "Failed to close Bluetooth socket: " + e.getMessage());
@@ -150,6 +198,8 @@ public class SetupFragment extends Fragment {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        outState.putBoolean("bluetooth_state", isBluetoothEnabled);
+        outState.putBoolean("wifi_state", isWifiEnabled);
         if (bluetoothDevice != null) {
             outState.putString("device_address", bluetoothDevice.getAddress());
         }
