@@ -22,7 +22,6 @@ import android.view.ViewGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.appcompat.widget.SwitchCompat; // 使用 SwitchCompat
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +42,23 @@ public class SetupBluetoothFragment extends Fragment {
     private BluetoothConnectionListener connectionListener;
     private BluetoothDevice connectedDevice; // 新增變數保存已連接的設備
     private final Object deviceLock = new Object(); // 新增鎖物件
+    private boolean initialBluetoothState = false; // 新增變數保存初始狀態
+
+    // 新增方法設置初始狀態
+    public void setInitialBluetoothState(boolean isEnabled) {
+        this.initialBluetoothState = isEnabled;
+    }
+
+    // 新增狀態監聽器介面
+    public interface BluetoothStateListener {
+        void onBluetoothStateChanged(boolean isEnabled);
+    }
+
+    private BluetoothStateListener stateListener;
+
+    public void setBluetoothStateListener(BluetoothStateListener listener) {
+        this.stateListener = listener;
+    }
 
     // 回調介面，用於傳遞藍牙連接
     public interface BluetoothConnectionListener {
@@ -73,6 +89,20 @@ public class SetupBluetoothFragment extends Fragment {
         bluetoothListAdapter = new BluetoothListAdapter(bluetoothList, this::connectToBluetoothDevice);
         recyclerBluetooth.setAdapter(bluetoothListAdapter);
 
+        // 設置初始狀態
+        switchBluetooth.setChecked(initialBluetoothState);
+        if (initialBluetoothState) {
+            recyclerBluetooth.setVisibility(View.VISIBLE);
+            tvBluetoothStatus.setText("已開啟");
+            tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+            checkAndRequestPermissions();
+            scanBluetooth();
+        } else {
+            recyclerBluetooth.setVisibility(View.GONE);
+            tvBluetoothStatus.setText("已關閉");
+            tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+        }
+
         switchBluetooth.setOnCheckedChangeListener((buttonView, isChecked) -> {
             Log.d(TAG, "Bluetooth switch changed: " + isChecked);
             Toast.makeText(requireContext(), "Bluetooth switch: " + (isChecked ? "On" : "Off"), Toast.LENGTH_SHORT).show();
@@ -86,6 +116,10 @@ public class SetupBluetoothFragment extends Fragment {
                 recyclerBluetooth.setVisibility(View.GONE);
                 tvBluetoothStatus.setText("已關閉");
                 tvBluetoothStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+            }
+            // 通知狀態變化
+            if (stateListener != null) {
+                stateListener.onBluetoothStateChanged(isChecked);
             }
         });
 
