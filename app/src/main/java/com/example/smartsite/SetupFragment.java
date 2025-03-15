@@ -4,6 +4,7 @@ import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 
@@ -24,7 +25,7 @@ import java.util.UUID;
 public class SetupFragment extends Fragment implements SetupBluetoothFragment.BluetoothStateListener, SetupWiFiFragment.WifiStateListener {
 
     private static final String TAG = "SetupFragment";
-    private Button btnSetupBluetooth, btnSetupWiFi;
+    private Button btnSetupBluetooth, btnSetupWiFi, btnSetupAlarm;
     private TextView tvBluetoothStatus, tvWifiStatus;
     private BluetoothSocket bluetoothSocket;
     private BluetoothDevice bluetoothDevice;
@@ -47,8 +48,9 @@ public class SetupFragment extends Fragment implements SetupBluetoothFragment.Bl
 
         btnSetupBluetooth = view.findViewById(R.id.btn_SetupBluetooth);
         btnSetupWiFi = view.findViewById(R.id.btn_SetupWiFi);
-        tvBluetoothStatus = view.findViewById(R.id.textView10);
-        tvWifiStatus = view.findViewById(R.id.textView11);
+        btnSetupAlarm = view.findViewById(R.id.btn_SetupAlarm);
+        tvBluetoothStatus = view.findViewById(R.id.tvBluetoothStatus);
+        tvWifiStatus = view.findViewById(R.id.tvWifiStatus);
 
         updateBluetoothStatusUI();
         updateWifiStatusUI();
@@ -110,6 +112,15 @@ public class SetupFragment extends Fragment implements SetupBluetoothFragment.Bl
                 return;
             }
             proceedToWiFiSetup();
+        });
+
+        // 新增 btnSetupAlarm 的點擊事件處理
+        btnSetupAlarm.setOnClickListener(v -> {
+            Log.d(TAG, "Alarm setup button clicked");
+            Toast.makeText(requireContext(), "開啟鬧鐘設置", Toast.LENGTH_SHORT).show();
+            // 啟動 setup_alarm 活動
+            Intent intent = new Intent(requireContext(), setup_alarm.class);
+            startActivity(intent);
         });
 
         if (savedInstanceState != null) {

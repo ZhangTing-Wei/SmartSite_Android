@@ -3,4 +3,14 @@
     <string name="home">首頁</string>
     <string name="history">歷史數據</string>
     <string name="setup">設定</string>
+    <string name="fab_add_alarm">新增鬧鐘</string>
+    <string name="delete_alarm">刪除鬧鐘</string>
+
+    <string-array name="repeat_options">
+        <item>One-time only</item>
+        <item>Every day</item>
+        <item>Monday to Friday</item>
+        <item>Custom</item>
+    </string-array>
+
 </resources>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- TimePicker：clock 模式 -->
+    <TimePicker
+        android:id="@+id/timePicker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:timePickerMode="clock"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 重複模式 Spinner -->
+    <Spinner
+        android:id="@+id/spinnerRepeat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/repeat_options" />
+
+    <!-- 提前提醒 Spinner -->
+
+    <!-- 自訂提醒輸入框，預設隱藏 -->
+<!--    <Spinner-->
+<!--        android:id="@+id/spinnerRemind"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginTop="8dp"-->
+<!--        android:entries="@array/remind_options" />-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/layoutCustomRemind"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:visibility="gone"-->
+<!--        android:layout_marginTop="8dp">-->
+
+<!--        <TextView-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="提前提醒 (分鐘):"-->
+<!--            android:layout_gravity="center_vertical"-->
+<!--            android:paddingEnd="8dp"/>-->
+
+<!--        <EditText-->
+<!--            android:id="@+id/editCustomRemind"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:inputType="number"-->
+<!--            android:hint="輸入分鐘數"-->
+<!--            android:ems="3" />-->
+<!--    </LinearLayout>-->
+
+    <!-- 自訂模式多選星期區塊，預設隱藏 -->
+    <LinearLayout
+        android:id="@+id/layoutCustomDays"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="選擇自訂星期:" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkboxMon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="週一" />
+
+            <CheckBox
+                android:id="@+id/checkboxTue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="週二" />
+
+            <CheckBox
+                android:id="@+id/checkboxWed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="週三" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkboxThu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="週四" />
+
+            <CheckBox
+                android:id="@+id/checkboxFri"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="週五" />
+
+            <CheckBox
+                android:id="@+id/checkboxSat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="週六" />
+
+            <CheckBox
+                android:id="@+id/checkboxSun"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="週日" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 取消 & 確定按鈕 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingTop="16dp">
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="取消" />
+
+        <Button
+            android:id="@+id/btnConfirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="確定"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+</LinearLayout>

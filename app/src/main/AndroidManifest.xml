@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.smartsite">
-
     <!-- 🔹 Wi-Fi 和藍牙所需的權限 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -12,11 +11,13 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.INTERNET" />
-
-
-    <!-- 🔹 Android 10+ 需要額外的權限 -->
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:ignore="MissingPermission" />
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- 權限宣告：接收開機完成、精準鬧鐘與通知 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- 🔹 Android 10+ 需要額外的權限 -->
+    <uses-permission
+        android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
+        tools:ignore="MissingPermission" />
 
     <application
         android:allowBackup="true"
@@ -28,12 +29,33 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartSite"
         tools:targetApi="31">
+        <activity
+            android:name=".setup_alarm"
+            android:exported="false" />
+        <!-- BootReceiver：裝置重啟後自動重新排程鬧鐘 -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver> <!-- AlarmReceiver：鬧鐘觸發後顯示通知的 BroadcastReceiver -->
+        <receiver
+            android:name=".AlarmReceiver"
+            android:exported="true" />
+        <receiver
+            android:name=".ScheduleReceiver"
+            android:exported="true" /> <!-- ReminderReceiver：提前提醒通知的 BroadcastReceiver -->
+        <receiver
+            android:name=".ReminderReceiver"
+            android:exported="true" />
 
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
