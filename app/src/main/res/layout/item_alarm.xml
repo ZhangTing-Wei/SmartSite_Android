@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp"
+    android:gravity="center_vertical">
+
+    <!-- 鬧鐘時間 & 重複/提醒資訊區域 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvAlarmTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="03:30 PM"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/tvRepeatRemind"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="每日, 提前10分鐘"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"/>
+    </LinearLayout>
+
+    <!-- Switch Button -->
+    <Switch
+        android:id="@+id/switchEnable"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:layout_marginEnd="8dp"/>
+
+    <!-- 刪除按鈕 (垃圾桶圖示) -->
+    <ImageButton
+        android:id="@+id/btnDelete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_delete"
+        android:background="@android:color/transparent"
+        android:contentDescription="@string/delete_alarm"
+        android:layout_marginStart="8dp"/>
+</LinearLayout>
