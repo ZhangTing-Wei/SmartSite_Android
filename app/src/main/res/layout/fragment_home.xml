@@ -39,6 +39,7 @@
                     android:id="@+id/AQIGrade"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="未知"
                     android:textAlignment="textStart"
                     android:textSize="30sp"
                     android:textStyle="bold" />
@@ -159,7 +160,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:visibility="invisible">
 
                 <Button
                     android:id="@+id/button"
@@ -189,7 +191,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:visibility="invisible">
 
                 <Button
                     android:id="@+id/button4"
