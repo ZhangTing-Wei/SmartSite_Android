@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "835177258641",
+    "firebase_url": "https://smart-site-yc-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "smart-site-yc",
+    "storage_bucket": "smart-site-yc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:835177258641:android:fe8198be34f1836b2ba930",
+        "android_client_info": {
+          "package_name": "com.example.smartsite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCd9gPdU_ctgsqevu8_iPmrpXjeMsM32a8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
