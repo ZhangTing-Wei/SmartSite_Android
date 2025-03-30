@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -21,6 +22,11 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -87,7 +93,10 @@ public class HistoryFragment extends Fragment {
         updateDateDisplay();
 
         // 初始化數據
-        loadCSVData();  // 讀取 CSV 數據
+//        loadCSVData();  // 讀取 CSV 數據
+        String selectedDateStr = sdf.format(new Date(startDateMillis));  // 例：2025-03-30
+        // 載入該日 Firebase 數據
+        loadFirebaseData(selectedDateStr);
 
         // 點擊左右箭頭調整日期
         ivPrevDay.setOnClickListener(v -> changeDate(-1)); // 前一天
@@ -117,7 +126,7 @@ public class HistoryFragment extends Fragment {
 
             // **🔹 先過濾數據**
             for (Entry entry : allData.get(i)) {
-                if (entry.getX() >= startDateMillis && entry.getX() <= endDateMillis) {
+                if (entry.getX() >= startDateMillis && entry.getX() < endDateMillis) {
                     filteredData.add(entry);
                 }
             }
@@ -239,7 +248,11 @@ public class HistoryFragment extends Fragment {
 
             // 6️⃣ 更新 UI
             tvSelectedDate.setText(sdf.format(new Date(startDateMillis)));
-            updateChart();
+
+            String selectedDateStr = sdf.format(new Date(newMillis));
+            loadFirebaseData(selectedDateStr);
+
+//            updateChart();
         } catch (Exception e) {
             Log.e("DateError", "日期解析錯誤: " + e.getMessage());
         }
@@ -260,7 +273,14 @@ public class HistoryFragment extends Fragment {
             endDateMillis = selection + 86400000L;  // ✅ 修正：補足一天的時間
             updateDateDisplay();
             // 更新圖表
-            updateChart();
+
+
+            String selectedDateStr = sdf.format(new Date(selection));  // 例：2025-03-30
+
+            // 載入該日 Firebase 數據
+            loadFirebaseData(selectedDateStr);
+
+//            updateChart();
         });
     }
 
@@ -316,6 +336,52 @@ public class HistoryFragment extends Fragment {
         if (!allData.isEmpty() && !allData.get(0).isEmpty()) {
             updateChart(); // 直接更新圖表，使用預設的當天範圍
         }
+    }
+
+    private void loadFirebaseData(String selectedDateStr) {
+        DatabaseReference databaseRef = FirebaseDatabase.getInstance()
+                .getReference("air_quality")
+                .child(selectedDateStr); // 例如 "2025-03-30"
+
+        databaseRef.orderByKey().addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                allData = new ArrayList<>();
+                for (int i = 0; i < 4; i++) {
+                    allData.add(new ArrayList<>());
+                }
+
+                for (DataSnapshot timeSnapshot : snapshot.getChildren()) {
+                    try {
+                        long timestamp = Long.parseLong(timeSnapshot.getKey());
+
+                        if (timestamp < 10000000000L) {
+                            timestamp *= 1000;
+                        }
+
+                        Float co = timeSnapshot.child("co").getValue(Float.class);
+                        Float o3 = timeSnapshot.child("o3").getValue(Float.class);
+                        Float pm25 = timeSnapshot.child("pm2_5").getValue(Float.class);
+                        Float pm10 = timeSnapshot.child("pm10").getValue(Float.class);
+
+                        if (co != null) allData.get(0).add(new Entry(timestamp, co));
+                        if (o3 != null) allData.get(1).add(new Entry(timestamp, o3));
+                        if (pm25 != null) allData.get(2).add(new Entry(timestamp, pm25));
+                        if (pm10 != null) allData.get(3).add(new Entry(timestamp, pm10));
+
+                    } catch (Exception e) {
+                        Log.e("Firebase", "資料格式錯誤: " + e.getMessage());
+                    }
+                }
+
+                updateChart();  // 更新折線圖
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("Firebase", "讀取資料失敗: " + error.getMessage());
+            }
+        });
     }
 
 }
