@@ -9,7 +9,7 @@ import java.util.Locale;
 
 public class DateAxisFormatter extends ValueFormatter {
 //    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
     @Override
     public String getAxisLabel(float value, AxisBase axis) {
