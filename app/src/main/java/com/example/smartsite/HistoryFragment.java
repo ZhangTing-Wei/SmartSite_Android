@@ -149,8 +149,13 @@ public class HistoryFragment extends Fragment {
                 }
 
                 // 🔹 設定 Y 軸範圍
-                float adjustedMaxY = maxY + (maxY - minY) * 0.1f;
-                float adjustedMinY = minY - (maxY - minY) * 0.1f;
+                float range = maxY - minY;
+                if (range < 1f) {
+                    range = 1f; // 保底範圍至少 1
+                }
+                float adjustedMaxY = maxY + range * 0.1f;
+                float adjustedMinY = minY - range * 0.1f;
+
 
                 charts[i].getAxisLeft().setAxisMaximum(adjustedMaxY);
                 charts[i].getAxisLeft().setAxisMinimum(adjustedMinY);
