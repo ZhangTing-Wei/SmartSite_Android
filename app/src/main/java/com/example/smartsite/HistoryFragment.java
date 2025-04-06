@@ -109,7 +109,14 @@ public class HistoryFragment extends Fragment {
     }
 
     // 🔹 根據選擇的日期範圍更新折線圖
+    // 🔥完整版 updateChart
     private void updateChart() {
+        // 🛡️ 新增這個防呆
+        if (!isAdded() || getContext() == null) {
+            Log.w("Chart", "Fragment not attached，略過更新圖表");
+            return;
+        }
+
         if (allData == null || allData.isEmpty()) {
             Log.e("Chart", "數據為空，無法更新圖表");
             return;
@@ -124,7 +131,7 @@ public class HistoryFragment extends Fragment {
         for (int i = 0; i < allData.size() && i < charts.length; i++) {
             ArrayList<Entry> filteredData = new ArrayList<>();
 
-            // **🔹 先過濾數據**
+            // 🔹 只取當天的數據
             for (Entry entry : allData.get(i)) {
                 if (entry.getX() >= startDateMillis && entry.getX() < endDateMillis) {
                     filteredData.add(entry);
@@ -132,10 +139,8 @@ public class HistoryFragment extends Fragment {
             }
 
             if (!filteredData.isEmpty()) {
-                // **🔹 先重置 maxY 和 minY**
                 float maxY = Float.NEGATIVE_INFINITY;
                 float minY = Float.POSITIVE_INFINITY;
-
                 ArrayList<Integer> pointColors = new ArrayList<>();
                 for (Entry entry : filteredData) {
                     pointColors.add(getColorForValue(i, entry.getY()));
@@ -143,54 +148,50 @@ public class HistoryFragment extends Fragment {
                     if (entry.getY() < minY) minY = entry.getY();
                 }
 
-                // **🔹 設定 Y 軸最大最小範圍**
-                // **確保 minY 不等於 maxY，否則擴展範圍**
-//                float padding = (maxY == minY) ? maxY * 0.1f : (maxY - minY) * 0.1f;
-//                float adjustedMaxY = maxY + padding;
-//                float adjustedMinY = minY - padding;
-                float adjustedMaxY = maxY + (maxY - minY) * 0.1f;  // 增加 5%
-                float adjustedMinY = minY - (maxY - minY) * 0.1f;  // 減少 5%
-
-//                float minRange = 5f; // 設定一個最小 Y 軸範圍
-//                if ((maxY - minY) < minRange) {
-//                    float centerY = (maxY + minY) / 2;
-//                    adjustedMaxY = centerY + minRange / 2;
-//                    adjustedMinY = centerY - minRange / 2;
-//                }
+                // 🔹 設定 Y 軸範圍
+                float adjustedMaxY = maxY + (maxY - minY) * 0.1f;
+                float adjustedMinY = minY - (maxY - minY) * 0.1f;
 
                 charts[i].getAxisLeft().setAxisMaximum(adjustedMaxY);
-                charts[i].getAxisLeft().setAxisMinimum(adjustedMinY);;
+                charts[i].getAxisLeft().setAxisMinimum(adjustedMinY);
                 charts[i].getAxisRight().setEnabled(false);
+
+                // 🔹 清空描述跟圖例
                 Description description = new Description();
                 description.setText("");
                 charts[i].setDescription(description);
                 charts[i].getLegend().setEnabled(false);
 
+                // 🔹 建立資料線
                 LineDataSet dataSet = new LineDataSet(filteredData, label[i]);
                 dataSet.setDrawCircles(true);
                 dataSet.setCircleColors(pointColors);
                 dataSet.setCircleRadius(1f);
                 dataSet.setDrawCircleHole(false);
-//                dataSet.setColor(getResources().getColor(colors[i % colors.length]));
                 dataSet.setColor(getResources().getColor(R.color.green));
                 dataSet.setValueTextColor(getResources().getColor(android.R.color.black));
                 dataSet.setValueTextSize(10f);
                 dataSet.setLineWidth(2f);
-//                dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
 
                 LineData lineData = new LineData(dataSet);
                 charts[i].setData(lineData);
-                charts[i].notifyDataSetChanged();
-                charts[i].invalidate();
-                // **🔹 設定 X 軸格式**
+
+                // 🔥 這邊是重點：設定X軸範圍 🔥
                 XAxis xAxis = charts[i].getXAxis();
                 xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-                xAxis.setLabelRotationAngle(45);
+                xAxis.setLabelRotationAngle(30f);
+                xAxis.setTextSize(10f);
+                xAxis.setLabelCount(4, true);
+                xAxis.setAvoidFirstLastClipping(true);
                 xAxis.setGranularityEnabled(true);
-                xAxis.setGranularity(1f);
+                xAxis.setGranularity(3600000f); // 1小時
+//                xAxis.setAxisMinimum(startDateMillis);
+//                xAxis.setAxisMaximum(endDateMillis);
                 xAxis.setValueFormatter(new DateAxisFormatter());
 
-
+                // 最後刷新圖表
+                charts[i].notifyDataSetChanged();
+                charts[i].invalidate();
             } else {
                 charts[i].clear();
             }
