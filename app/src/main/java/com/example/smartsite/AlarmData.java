@@ -45,6 +45,9 @@ public class AlarmData {
     /** 自訂提醒時間 (分鐘)，當 remindTime 為 "Custom" 時使用 */
     private int customRemindMinutes;
 
+    /** 鬧鐘觸發的時間（毫秒） */
+    private long triggerTimestamp;
+
     // ----------------------
     // Constructor
     // ----------------------
@@ -113,5 +116,13 @@ public class AlarmData {
 
     public void setCustomRemindMinutes(int customRemindMinutes) {
         this.customRemindMinutes = customRemindMinutes;
+    }
+
+    public long getTriggerTimestamp() {
+        return triggerTimestamp;
+    }
+
+    public void setTriggerTimestamp(long triggerTimestamp) {
+        this.triggerTimestamp = triggerTimestamp;
     }
 }
