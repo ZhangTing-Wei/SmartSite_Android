@@ -55,7 +55,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp"
-                    android:layout_marginTop="30dp"
+                    android:layout_marginTop="80dp"
                     android:text="一氧化碳 (ppm)"
                     android:textSize="25sp" />
 
@@ -64,7 +64,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="32dp"
-                    android:layout_marginTop="30dp"
+                    android:layout_marginTop="80dp"
                     android:text="臭氧 (ppb)"
                     android:textSize="25sp" />
             </LinearLayout>
