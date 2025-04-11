@@ -251,6 +251,19 @@ public class setup_alarm extends AppCompatActivity {
             AlarmData newAlarm = new AlarmData(timeText, true, repeat, remind);
             newAlarm.setAlarmId(alarmId);
 
+            // 🔥【加這裡】設定triggerTimestamp
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.HOUR_OF_DAY, hour);
+            calendar.set(Calendar.MINUTE, minute);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+
+            if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
+                calendar.add(Calendar.DAY_OF_MONTH, 1);
+            }
+
+            newAlarm.setTriggerTimestamp(calendar.getTimeInMillis()); // ← 這行很重要
+
             // 處理「Custom」重複模式，收集勾選星期
             if ("Custom".equals(repeat)) {
                 ArrayList<Integer> customDaysList = new ArrayList<>();
