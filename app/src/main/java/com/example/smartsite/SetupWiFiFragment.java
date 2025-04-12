@@ -315,30 +315,26 @@ public class SetupWiFiFragment extends Fragment {
 
     private void sendWifiCredentials(String ssid, String password) {
         Log.d(TAG, "Sending Wi-Fi credentials: SSID=" + ssid + ", Password=" + password);
-        Log.d(TAG, "BluetoothSocket state: " + (bluetoothSocket != null ? "valid" : "null") + ", connected: " + (bluetoothSocket != null && bluetoothSocket.isConnected()));
         if (!isAdded() || getContext() == null) {
             Log.w(TAG, "Fragment not attached, skipping send credentials");
             return;
         }
-        Toast.makeText(getContext(), "發送 Wi-Fi 憑證: " + ssid, Toast.LENGTH_SHORT).show();
+
+        showToastOnUiThread("發送 Wi-Fi 憑證: " + ssid);
+
         new Thread(() -> {
             try {
                 synchronized (socketLock) {
                     if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
                         Log.w(TAG, "Bluetooth socket is null or not connected, attempting to reconnect");
+
                         if (bluetoothDevice == null) {
-                            Log.w(TAG, "Bluetooth device is null, cannot reconnect");
-                            requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(getContext(), "藍牙設備不可用", Toast.LENGTH_SHORT).show()
-                            );
+                            showToastOnUiThread("藍牙設備不可用");
                             return;
                         }
 
                         if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                            Log.w(TAG, "BLUETOOTH_CONNECT permission not granted");
-                            requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(getContext(), "缺少藍牙連接權限", Toast.LENGTH_SHORT).show()
-                            );
+                            showToastOnUiThread("缺少藍牙連接權限");
                             return;
                         }
 
@@ -348,45 +344,51 @@ public class SetupWiFiFragment extends Fragment {
                             Log.d(TAG, "Reconnected to Bluetooth device");
                         } catch (SecurityException e) {
                             Log.e(TAG, "SecurityException during reconnect: " + e.getMessage());
-                            requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(getContext(), "藍牙連接權限被拒絕: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                            );
+                            showToastOnUiThread("藍牙連接權限被拒絕: " + e.getMessage());
                             return;
                         } catch (IOException e) {
                             Log.e(TAG, "IOException during reconnect: " + e.getMessage());
-                            requireActivity().runOnUiThread(() ->
-                                    Toast.makeText(getContext(), "藍牙重連失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                            );
+                            showToastOnUiThread("藍牙重連失敗: " + e.getMessage());
                             return;
                         }
                     }
 
+                    // 發送Wi-Fi帳密
                     String credentials = ssid + "," + password + "\n";
                     bluetoothSocket.getOutputStream().write(credentials.getBytes());
                     bluetoothSocket.getOutputStream().flush();
                     Log.d(TAG, "Wi-Fi credentials sent successfully");
 
+                    // 讀取ESP32回應
                     byte[] buffer = new byte[1024];
                     int bytesRead = bluetoothSocket.getInputStream().read(buffer);
                     String response = new String(buffer, 0, bytesRead).trim();
                     Log.d(TAG, "Received response from ESP32: " + response);
 
-                    if (response.equals("OK")) {
-                        requireActivity().runOnUiThread(() ->
-                                Toast.makeText(getContext(), "Wi-Fi資訊已發送並確認", Toast.LENGTH_SHORT).show()
-                        );
+                    if ("OK".equals(response)) {
+                        showToastOnUiThread("Wi-Fi資訊已發送並確認");
                     } else {
-                        requireActivity().runOnUiThread(() ->
-                                Toast.makeText(getContext(), "ESP32未正確回應: " + response, Toast.LENGTH_SHORT).show()
-                        );
+                        showToastOnUiThread("ESP32未正確回應: " + response);
                     }
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Failed to send Wi-Fi credentials: " + e.getMessage(), e);
-                requireActivity().runOnUiThread(() ->
-                        Toast.makeText(getContext(), "發送失敗: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+                showToastOnUiThread("發送失敗: " + e.getMessage());
             }
         }).start();
     }
+
+    /**
+     * 在主線程顯示Toast，保護Fragment狀態，避免背景執行緒崩潰
+     */
+    private void showToastOnUiThread(String message) {
+        if (isAdded() && getActivity() != null) {
+            getActivity().runOnUiThread(() ->
+                    Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show()
+            );
+        } else {
+            Log.w(TAG, "Cannot show toast, fragment not attached: " + message);
+        }
+    }
+
 }
