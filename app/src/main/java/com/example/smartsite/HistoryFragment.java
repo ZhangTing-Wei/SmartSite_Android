@@ -1,6 +1,5 @@
 package com.example.smartsite;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,17 +9,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -28,10 +24,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -48,12 +40,6 @@ public class HistoryFragment extends Fragment {
     private ImageView ivPrevDay, ivNextDay;
     private Calendar calendar;
     String[] label = {"CO", "O3", "PM2.5", "PM10"};
-//    int[] colors = {
-//            R.color.CO,
-//            R.color.O3,
-//            R.color.PM2_5,
-//            R.color.PM10
-//    };
 
     public HistoryFragment() {
         // Required empty public constructor
@@ -93,7 +79,6 @@ public class HistoryFragment extends Fragment {
         updateDateDisplay();
 
         // 初始化數據
-//        loadCSVData();  // 讀取 CSV 數據
         String selectedDateStr = sdf.format(new Date(startDateMillis));  // 例：2025-03-30
         // 載入該日 Firebase 數據
         loadFirebaseData(selectedDateStr);
@@ -258,7 +243,6 @@ public class HistoryFragment extends Fragment {
             String selectedDateStr = sdf.format(new Date(newMillis));
             loadFirebaseData(selectedDateStr);
 
-//            updateChart();
         } catch (Exception e) {
             Log.e("DateError", "日期解析錯誤: " + e.getMessage());
         }
@@ -280,68 +264,11 @@ public class HistoryFragment extends Fragment {
             updateDateDisplay();
             // 更新圖表
 
-
             String selectedDateStr = sdf.format(new Date(selection));  // 例：2025-03-30
 
             // 載入該日 Firebase 數據
             loadFirebaseData(selectedDateStr);
-
-//            updateChart();
         });
-    }
-
-    private void loadCSVData() {
-        allData = new ArrayList<>();
-        try {
-            InputStream inputStream = getActivity().getAssets().open("test_data.csv");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            String line;
-            boolean firstLine = true;
-
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-
-                // 忽略 CSV 第一行標題
-                if (firstLine) {
-                    firstLine = false;
-
-                    // 初始化 allData（跳過 Timestamp 和 Date 欄位）
-                    for (int i = 1; i < parts.length - 1; i++) {
-                        allData.add(new ArrayList<>());
-                    }
-                    continue;
-                }
-
-                // 確保數據欄位足夠
-                if (parts.length >= 6) {  // 5 個數據欄位 + 1 個日期欄
-                    try {
-                        long timestamp = Long.parseLong(parts[0]);
-
-                        // 轉換時間戳為毫秒級
-                        if (timestamp < 10000000000L) {
-                            timestamp *= 1000;
-                        }
-
-                        // 解析數據（跳過 Date 欄）
-                        for (int i = 1; i < parts.length - 1; i++) {
-                            float value = Float.parseFloat(parts[i]);  // 解析數字
-                            allData.get(i - 1).add(new Entry(timestamp, value));
-                        }
-                    } catch (NumberFormatException e) {
-                        Log.e("CSV", "數據格式錯誤: " + e.getMessage() + " -> " + line);
-                    }
-                }
-            }
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.e("CSV", "讀取 CSV 失敗: " + e.getMessage());
-        }
-
-        // 確保數據不為空，然後更新圖表
-        if (!allData.isEmpty() && !allData.get(0).isEmpty()) {
-            updateChart(); // 直接更新圖表，使用預設的當天範圍
-        }
     }
 
     private void loadFirebaseData(String selectedDateStr) {
