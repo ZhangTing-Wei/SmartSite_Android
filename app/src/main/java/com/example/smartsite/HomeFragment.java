@@ -36,14 +36,6 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         final AtomicInteger aqi = new AtomicInteger(0);
-//        int aqi = 0;
-
-//        Button btn_1 = view.findViewById(R.id.button);
-//        Button btn_2 = view.findViewById(R.id.button2);
-//        Button btn_3 = view.findViewById(R.id.button3);
-//        Button btn_4 = view.findViewById(R.id.button4);
-//        Button btn_5 = view.findViewById(R.id.button5);
-//        Button btn_6 = view.findViewById(R.id.button6);
 
         TextView aqiGrade = view.findViewById(R.id.AQIGrade);
 
@@ -88,82 +80,15 @@ public class HomeFragment extends Fragment {
 
         // 設定 CO 儀表範圍與顏色
         setupGauge(gaugeCO, "CO 濃度 (ppm)", 0.0f, 25f, new int[]{Color.GREEN, Color.rgb(255, 165, 0), Color.RED}, new float[]{.33f, .66f, 1f});
-//        gaugeCO.speedTo(35);  // 設定初始值
 
         // 設定 O3 儀表範圍與顏色
         setupGauge(gaugeO3, "O₃ 濃度 (ppb)", 0f, 160f, new int[]{Color.GREEN, Color.rgb(255, 165, 0), Color.RED}, new float[]{.33f, .66f, 1f});
-//        gaugeO3.speedTo(256);
 
         // 設定 PM2.5 儀表範圍與顏色
         setupGauge(gaugePM25, "PM2.5 (µg/m³)", 0f, 200f, new int[]{Color.GREEN, Color.rgb(255, 165, 0), Color.RED}, new float[]{.33f, .66f, 1f});
-//        gaugePM25.speedTo(80);
 
         // 設定 PM10 儀表範圍與顏色
         setupGauge(gaugePM10, "PM10 (µg/m³)", 0f, 500f, new int[]{Color.GREEN, Color.rgb(255, 165, 0), Color.RED}, new float[]{.33f, .66f, 1f});
-//        gaugePM10.speedTo(80);
-
-        //        setupGradeText(aqiGrade, aqi);
-
-        // 設定監聽器，當速度變化時更新文字顏色(整數變化下)
-//        gaugeCO.setOnSpeedChangeListener((gauge, isSpeedUp, isByTremble) -> {
-//            int speed = gauge.getCurrentIntSpeed(); // 取得當前的速度
-//
-//            // 根據速度設置 AQI 文字顏色
-//            if (speed < 8) {
-//                gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
-//            } else if (speed < 18) {
-//                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
-//            } else {
-//                gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
-//            }
-//
-//            return null;
-//        });
-//
-//        gaugeO3.setOnSpeedChangeListener((gauge, isSpeedUp, isByTremble) -> {
-//            int speed = gauge.getCurrentIntSpeed(); // 取得當前的速度
-//
-//            // 根據速度設置 AQI 文字顏色
-//            if (speed < 53) {
-//                gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
-//            } else if (speed < 107) {
-//                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
-//            } else {
-//                gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
-//            }
-//
-//            return null;
-//        });
-//
-//        gaugePM25.setOnSpeedChangeListener((gauge, isSpeedUp, isByTremble) -> {
-//            int speed = gauge.getCurrentIntSpeed(); // 取得當前的速度
-//
-//            // 根據速度設置 AQI 文字顏色
-//            if (speed < 67) {
-//                gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
-//            } else if (speed < 133) {
-//                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
-//            } else {
-//                gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
-//            }
-//
-//            return null;
-//        });
-//
-//        gaugePM10.setOnSpeedChangeListener((gauge, isSpeedUp, isByTremble) -> {
-//            int speed = gauge.getCurrentIntSpeed(); // 取得當前的速度
-//
-//            // 根據速度設置 AQI 文字顏色
-//            if (speed < 167) {
-//                gauge.setSpeedTextColor(Color.GREEN); // 低於 8 綠色
-//            } else if (speed < 333) {
-//                gauge.setSpeedTextColor(Color.rgb(255, 153, 51)); // 8 到 18 橙色
-//            } else {
-//                gauge.setSpeedTextColor(Color.RED); // 大於 18 紅色
-//            }
-//
-//            return null;
-//        });
 
         gaugeCO.setOnSectionChangeListener((previousSection, newSection) -> {
             if (newSection == null)
@@ -192,39 +117,6 @@ public class HomeFragment extends Fragment {
             gaugePM10.setSpeedTextColor(newSec.getColor());
             return null;
         });
-
-
-        // Set up button click listeners to change AQI grade color
-//        btn_1.setOnClickListener(v -> {
-//            aqi.set(30); // Test with AQI value 30
-//            setupGradeText(aqiGrade, aqi.get());
-//        });
-//
-//        btn_2.setOnClickListener(v -> {
-//            aqi.set(80); // Test with AQI value 80
-//            setupGradeText(aqiGrade, aqi.get());
-//        });
-//
-//        btn_3.setOnClickListener(v -> {
-//            aqi.set(120); // Test with AQI value 120
-//            setupGradeText(aqiGrade, aqi.get());
-//        });
-//
-//        btn_4.setOnClickListener(v -> {
-//            aqi.set(180); // Test with AQI value 180
-//            setupGradeText(aqiGrade, aqi.get());
-//        });
-//
-//        btn_5.setOnClickListener(v -> {
-//            aqi.set(250); // Test with AQI value 250
-//            setupGradeText(aqiGrade, aqi.get());
-//        });
-//
-//        btn_6.setOnClickListener(v -> {
-//            aqi.set(350); // Test with AQI value 350
-//            setupGradeText(aqiGrade, aqi.get());
-//        });
-
 
         return view;
     }
@@ -259,8 +151,6 @@ public class HomeFragment extends Fragment {
         for (int i = 0; i < colors.length; i++) {
             gauge.addSections(new Section(i == 0 ? min : ranges[i - 1], ranges[i], colors[i], 30f));
         }
-
-//        gauge.setSpeedTextColor(Color.GREEN);
 
         gauge.setUnit("");  // 設定標題
 //        gauge.setUnitTextSize(50f); // 設定標題字體大小
