@@ -175,8 +175,6 @@ public class HistoryFragment extends Fragment {
                 xAxis.setAvoidFirstLastClipping(true);
                 xAxis.setGranularityEnabled(true);
                 xAxis.setGranularity(3600000f); // 1小時
-//                xAxis.setAxisMinimum(startDateMillis);
-//                xAxis.setAxisMaximum(endDateMillis);
                 xAxis.setValueFormatter(new DateAxisFormatter());
 
                 // 最後刷新圖表
