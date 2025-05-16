@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -160,7 +161,7 @@ public class SetupWiFiFragment extends Fragment {
             tvWifiStatus.setText("已開啟");
             tvWifiStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
             checkAndRequestPermissions();
-            scanWifi();
+            wifiScanRunnable.run();
         } else {
             recyclerWifi.setVisibility(View.GONE);
             tvWifiStatus.setText("已關閉");
@@ -179,9 +180,10 @@ public class SetupWiFiFragment extends Fragment {
                 tvWifiStatus.setText("已開啟");
                 tvWifiStatus.setTextColor(ContextCompat.getColor(getContext(), android.R.color.holo_green_dark));
                 checkAndRequestPermissions();
-                scanWifi();
+                wifiScanRunnable.run();
             } else {
                 recyclerWifi.setVisibility(View.GONE);
+                wifiScanHandler.removeCallbacks(wifiScanRunnable);
                 tvWifiStatus.setText("已關閉");
                 tvWifiStatus.setTextColor(ContextCompat.getColor(getContext(), android.R.color.darker_gray));
             }
@@ -194,12 +196,30 @@ public class SetupWiFiFragment extends Fragment {
         return view;
     }
 
+    private final android.os.Handler wifiScanHandler = new android.os.Handler();
+    private final Runnable wifiScanRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isAdded() && switchWifi != null && switchWifi.isChecked()) {
+                scanWifi();
+                wifiScanHandler.postDelayed(this, 30000); // 每10秒掃一次
+            }
+        }
+    };
+
     @Override
     public void onStart() {
         super.onStart();
         if (switchWifi != null && switchWifi.isChecked()) {
-            scanWifi();
+            wifiScanHandler.removeCallbacks(wifiScanRunnable); // 清除舊的，避免重複
+            wifiScanRunnable.run();  // 啟動自動掃描
         }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        wifiScanHandler.removeCallbacks(wifiScanRunnable); // 停止自動掃描
     }
 
     private final BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
